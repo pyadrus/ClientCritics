@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def start_keyboard() -> InlineKeyboardMarkup:
