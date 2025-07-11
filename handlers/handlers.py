@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from aiogram import html
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from loguru import logger
+
 from dispatcher import dp
 from keyboards.keyboards import start_keyboard
+
+logger.add("log/log.log", enqueue=True)
 
 
 @dp.message(CommandStart())
