@@ -35,7 +35,7 @@ def product_selection_keyboard() -> InlineKeyboardMarkup:
 
 
 # ========================
-# Выбор размера ARBO PRIMO
+# Выбор размера ARBO PRIMO, например  size = "solo" или "duo".  text = "Solo (120 × 75 см)" или "Duo (140 × 80 см)"
 # ========================
 
 TABLE_SIZES = {
