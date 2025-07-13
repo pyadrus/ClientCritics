@@ -38,15 +38,15 @@ def product_selection_keyboard() -> InlineKeyboardMarkup:
 # ========================
 
 TABLE_SIZES = {
-    "solo": "Solo (120 × 75 см)",
-    "duo": "Duo (140 × 80 см)",
-    "atelier": "Atelier (160 × 85 см)",
-    "grande": "Grande (180 × 90 см)",
-    "majestic": "Majestic (200 × 95 см)"
+    "solo_primo": "Solo (120 × 75 см)",
+    "duo_primo": "Duo (140 × 80 см)",
+    "atelier_primo": "Atelier (160 × 85 см)",
+    "grande_primo": "Grande (180 × 90 см)",
+    "majestic_primo": "Majestic (200 × 95 см)"
 }
 
 
-def selection_size_arbo_primo_table_keyboard() -> InlineKeyboardMarkup:
+def selection_size_arbo_primo_table_keyboard_primo() -> InlineKeyboardMarkup:
     """
     Возвращает клавиатуру для выбора размера стола ARBO PRIMO.
     """
