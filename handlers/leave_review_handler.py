@@ -5,11 +5,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from dispatcher import router, bot
-from keyboards.keyboards import (
-    product_selection_keyboard,
-    selection_size_arbo_primo_table_keyboard,
+from keyboards.keyboards import product_selection_keyboard, selection_size_arbo_primo_table_keyboard, \
     selection_colour_keyboard
-)
 
 
 @router.callback_query(F.data == "leave_review")
