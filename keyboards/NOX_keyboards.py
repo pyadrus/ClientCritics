@@ -24,3 +24,23 @@ def selection_size_arbo_primo_table_keyboard_nox() -> InlineKeyboardMarkup:
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def leave_review_nox_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура согласия отставить отзыв"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Оставить отзыв", callback_data="leave_review_nox")],
+        ]
+    )
+
+
+def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
+    """Клавиатура согласия отправить отзыв"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Отправить", callback_data="send_review_nox"),
+            ]
+        ]
+    )
