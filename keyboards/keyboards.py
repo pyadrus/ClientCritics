@@ -28,7 +28,6 @@ def product_selection_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Стол ARBO PRIMO", callback_data="arbo_primo_table")],
-            [InlineKeyboardButton(text="Стол ARBO", callback_data="arbo_table")],
             [InlineKeyboardButton(text="Стол NOX", callback_data="the_nox_table")],
         ]
     )
