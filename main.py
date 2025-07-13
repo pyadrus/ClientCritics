@@ -3,6 +3,8 @@ import logging
 import sys
 
 from dispatcher import bot, dp
+from handlers.NOX_handler import register_NOX_handlers
+from handlers.PRIMO_handler import register_PRIMO_handlers
 from handlers.handlers import register_handlers
 from handlers.leave_review_handler import register_leave_review_handlers
 
@@ -15,6 +17,8 @@ async def main() -> None:
     register_handlers()
 
     register_leave_review_handlers()  # Выбор продукта для отзыва
+    register_NOX_handlers()  # Отзывы NOX
+    register_PRIMO_handlers()  # Отзывы PRIMO
 
 
 if __name__ == "__main__":
