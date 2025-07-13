@@ -161,24 +161,11 @@ ___________________________________________________________________
 <h2>Стол NOX</h2>
 <table> 
 <tr><th>Размер</th><th>Цвет</th></tr>
-<tr><td>Solo (120 × 75 см)</td><td>Молоко</td></tr>
-<tr><td>Duo (140 × 80 см)</td><td>Шёлк</td></tr>
-<tr><td>Atelier (160 × 85 см)</td><td>Туман</td></tr>
-<tr><td>Grande (180 × 90 см)</td><td>Лён</td></tr>
-<tr><td>Majestic (200 × 95 см)</td><td>Мох</td></tr>
-<tr><td>-</td><td>Солома</td></tr>
-<tr><td>-</td><td>Песчаник</td></tr>
-<tr><td>-</td><td>Миндаль</td></tr>
-<tr><td>-</td><td>Коньяк</td></tr>
-<tr><td>-</td><td>Янтарь</td></tr>
-<tr><td>-</td><td>Орех карамельный</td></tr>
-<tr><td>-</td><td>Шоколад</td></tr>
-<tr><td>-</td><td>Мускат</td></tr>
-<tr><td>-</td><td>Уголь</td></tr>
-<tr><td>-</td><td>Эбен</td></tr>
-<tr><td>-</td><td>Терракот</td></tr>
-<tr><td>-</td><td>Медный</td></tr>
-<tr><td>-</td><td>Бесцветный</td></tr>
+<tr><td>Solo (120 × 75 см)</td><td>-</td></tr>
+<tr><td>Duo (140 × 80 см)</td><td>-</td></tr>
+<tr><td>Atelier (160 × 85 см)</td><td>-</td></tr>
+<tr><td>Grande (180 × 90 см)</td><td>-</td></tr>
+<tr><td>Majestic (200 × 95 см)</td><td>-</td></tr>
 </table>
 
 ___________________________________________________________________
