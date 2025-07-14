@@ -61,19 +61,38 @@ def selection_size_arbo_primo_table_keyboard_primo() -> InlineKeyboardMarkup:
 # ========================
 # Выбор цвета, например  color = "Молоко" или "Шёлк".  text = "Молоко" или "Шёлк"
 # ========================
-
-COLOURS = [
-    "Молоко", "Шёлк", "Туман", "Лён", "Мох", "Солома", "Песчаник", "Миндаль", "Коньяк", "Янтарь",
-    "Орех карамельный", "Шоколад", "Мускат", "Уголь", "Эбен", "Терракот", "Медный", "Бесцветный"
-]
+COLOURS = {
+    "milk": "Молоко",
+    "silk": "Шёлк",
+    "fog": "Туман",
+    "flax": "Лён",
+    "moss": "Мох",
+    "straw": "Солома",
+    "sandstone": "Песчаник",
+    "almond": "Миндаль",
+    "brandy": "Коньяк",
+    "amber": "Янтарь",
+    "caramel_nut": "Орех карамельный",
+    "chocolate": "Шоколад",
+    "nutmeg": "Мускат",
+    "coal": "Уголь",
+    "ebony": "Эбен",
+    "terracotta": "Терракот",
+    "copper": "Медный",
+    "colorless": "Бесцветный"
+}
 
 
 def selection_colour_keyboard() -> InlineKeyboardMarkup:
     """
     Возвращает клавиатуру для выбора цвета товара.
     Разбивает цвета по строкам по 3 кнопки.
+    Текст кнопки — русское название цвета, callback_data — английский ключ.
     """
-    buttons = [InlineKeyboardButton(text=colour, callback_data=colour) for colour in COLOURS]
+    buttons = [
+        InlineKeyboardButton(text=ru_name, callback_data=en_key)
+        for en_key, ru_name in COLOURS.items()
+    ]
 
     # Разбиваем список кнопок на строки по 3 элемента
     keyboard_rows = [
@@ -82,3 +101,22 @@ def selection_colour_keyboard() -> InlineKeyboardMarkup:
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
+
+
+def leave_review_primo_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура согласия отставить отзыв"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Оставить отзыв", callback_data="leave_review_primo")],
+        ]
+    )
+
+def the_send_button_keyboard_primo() -> InlineKeyboardMarkup:
+    """Клавиатура согласия отправить отзыв"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Отправить", callback_data="send_review_primo"),
+            ]
+        ]
+    )
