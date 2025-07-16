@@ -33,8 +33,9 @@ async def select_size_nox(callback_query: CallbackQuery, state: FSMContext):
     Сохраняет его в состояние FSM и предлагает оставить отзыв.
     """
     selected_size = callback_query.data
+    readable = TABLE_SIZES_NOX[selected_size]  # selected_size — это ключ
     await state.update_data(size=selected_size)
-    readable = TABLE_SIZES_NOX[selected_size]
+
     logger.info(f"🟢 [{callback_query.from_user.id}] Выбран размер: {readable}")
 
     await bot.send_message(
@@ -43,7 +44,6 @@ async def select_size_nox(callback_query: CallbackQuery, state: FSMContext):
         reply_markup=leave_review_nox_keyboard()
     )
     await state.set_state(States.feedback)
-
 
 @router.callback_query(StateFilter(States.feedback), F.data == "leave_review_nox")
 async def leave_review_nox(callback_query: CallbackQuery, state: FSMContext):
@@ -71,17 +71,18 @@ async def send_review_nox(message: Message, state: FSMContext):
     data = await state.get_data()
     user_id = message.from_user.id
     table_size = data.get("size", "unknown")
+    readable = TABLE_SIZES_NOX[table_size]  # selected_size — это ключ
     feedback_status = data.get("feedback", "no")
     feedback_text = message.text.strip()
     # Сохраняем в базу данных
     Review.create(
         user_id=user_id,
-        table_size=table_size,
+        table_size=readable,
         feedback_status=feedback_status,
         feedback_text=feedback_text
     )
 
-    logger.success(f"✅ [{user_id}] Отзыв сохранён: size={table_size}, text={feedback_text}")
+    logger.success(f"✅ [{user_id}] Отзыв сохранён: size={readable}, text={feedback_text}")
 
     await message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌")
     await state.clear()
