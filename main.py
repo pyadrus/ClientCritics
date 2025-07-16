@@ -7,11 +7,15 @@ from handlers.NOX_handler import register_NOX_handlers
 from handlers.PRIMO_handler import register_PRIMO_handlers
 from handlers.handlers import register_handlers
 from handlers.leave_review_handler import register_leave_review_handlers
-
+from models.models import create_tables
+from loguru import logger
 
 # https://docs.aiogram.dev/en/dev-3.x/
 
 async def main() -> None:
+    create_tables()  # ✅ создание таблиц один раз при старте
+    logger.info("🚀 Таблицы созданы или уже существуют")
+
     # запуск
     await dp.start_polling(bot)
     register_handlers()

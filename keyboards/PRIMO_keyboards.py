@@ -111,6 +111,7 @@ def leave_review_primo_keyboard() -> InlineKeyboardMarkup:
         ]
     )
 
+
 def the_send_button_keyboard_primo() -> InlineKeyboardMarkup:
     """Клавиатура согласия отправить отзыв"""
     return InlineKeyboardMarkup(
