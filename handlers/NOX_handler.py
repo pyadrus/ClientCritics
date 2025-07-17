@@ -45,6 +45,7 @@ async def select_size_nox(callback_query: CallbackQuery, state: FSMContext):
     )
     await state.set_state(States.feedback)
 
+
 @router.callback_query(StateFilter(States.feedback), F.data == "leave_review_nox")
 async def leave_review_nox(callback_query: CallbackQuery, state: FSMContext):
     """
@@ -90,7 +91,7 @@ async def send_review_nox(message: Message, state: FSMContext):
 
 def register_NOX_handlers():
     """Регистрация обработчиков"""
-    router.register_callback_query_handler(the_nox_table)  # Регистрация обработчика
-    router.register_callback_query_handler(select_size_nox)  # Регистрация обработчика
-    router.register_callback_query_handler(leave_review_nox)  # Регистрация обработчика
-    router.register_callback_query_handler(send_review_nox)  # Регистрация обработчика
+    router.callback_query.register(the_nox_table)  # Регистрация обработчика
+    router.callback_query.register(select_size_nox)  # Регистрация обработчика
+    router.callback_query.register(leave_review_nox)  # Регистрация обработчика
+    router.callback_query.register(send_review_nox)  # Регистрация обработчика

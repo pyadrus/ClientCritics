@@ -52,9 +52,9 @@ async def send_review_primo(callback_query: CallbackQuery):
 
 def register_PRIMO_handlers():
     """Регистрация обработчиков"""
-    router.register_callback_query_handler(arbo_primo_table)
-    router.register_callback_query_handler(select_size)
-    router.register_callback_query_handler(select_colour_primo)
+    router.callback_query.register(arbo_primo_table)
+    router.callback_query.register(select_size)
+    router.callback_query.register(select_colour_primo)
 
-    router.register_callback_query_handler(leave_review_primo)
-    router.register_callback_query_handler(send_review_primo)
+    router.callback_query.register(leave_review_primo)
+    router.callback_query.register(send_review_primo)

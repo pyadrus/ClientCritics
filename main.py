@@ -2,13 +2,15 @@ import asyncio
 import logging
 import sys
 
+from loguru import logger
+
 from dispatcher import bot, dp
 from handlers.NOX_handler import register_NOX_handlers
 from handlers.PRIMO_handler import register_PRIMO_handlers
 from handlers.handlers import register_handlers
 from handlers.leave_review_handler import register_leave_review_handlers
 from models.models import create_tables
-from loguru import logger
+
 
 # https://docs.aiogram.dev/en/dev-3.x/
 
