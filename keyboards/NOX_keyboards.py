@@ -10,7 +10,7 @@ TABLE_SIZES_NOX = {
     "duo_nox": "Duo (140 × 80 см)",
     "atelier_nox": "Atelier (160 × 85 см)",
     "grande_nox": "Grande (180 × 90 см)",
-    "majestic_nox": "Majestic (200 × 95 см)"
+    "majestic_nox": "Majestic (200 × 95 см)",
 }
 
 
@@ -22,17 +22,34 @@ def selection_size_arbo_primo_table_keyboard_nox() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=text, callback_data=size)]
         for size, text in TABLE_SIZES_NOX.items()
     ]
-
+    # Добавляем кнопку "В начальное меню"
+    buttons.append([
+        InlineKeyboardButton(text="В начальное меню", callback_data="start_menu")
+    ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def leave_review_nox_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура согласия отставить отзыв"""
+def keyboard_video_handler():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Оставить отзыв", callback_data="leave_review_nox")],
-        ]
-    )
+            [InlineKeyboardButton(text="Пропустить", callback_data="skip_step"),],
+            [InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"),],
+        ])
+
+def keyboard_start_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"),
+            ]])
+
+    # def leave_review_nox_keyboard() -> InlineKeyboardMarkup:
+    #     """Клавиатура согласия отставить отзыв"""
+    #     return InlineKeyboardMarkup(
+    #         inline_keyboard=[
+    #             [InlineKeyboardButton(text="Оставить отзыв", callback_data="leave_review_nox")],
+    #         ]
+    #     )
 
 
 def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
