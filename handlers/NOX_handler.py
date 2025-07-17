@@ -8,6 +8,7 @@ from loguru import logger
 from dispatcher import router, bot
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, leave_review_nox_keyboard,
                                      TABLE_SIZES_NOX)
+from messages.messages import size_selection_text
 from models.models import Review
 from states.states import States
 
@@ -20,7 +21,7 @@ async def the_nox_table(callback_query: CallbackQuery, state: FSMContext):
     """
     await bot.send_message(
         callback_query.from_user.id,
-        "📐 Выберите размер стола:",
+        size_selection_text,
         reply_markup=selection_size_arbo_primo_table_keyboard_nox()
     )
     await state.set_state(States.size)

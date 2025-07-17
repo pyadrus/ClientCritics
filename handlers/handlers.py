@@ -9,17 +9,9 @@ from loguru import logger
 from dispatcher import dp
 from dispatcher import router
 from keyboards.keyboards import start_keyboard
+from messages.messages import greeting_text
 
 logger.add("log/log.log", enqueue=True)
-
-text = (
-    "Здравствуйте! Рад, что стол уже у Вас.\n\n"
-
-    "Буду благодарен, если найдете немного о времени, и поделитесь своими впечатлениями.\n\n"
-
-    "Не обязательно писать что-то официальное — просто расскажите, как Вам стол: ощущения, впечатления, детали, "
-    "которые порадовали или удивили."
-)
 
 
 @dp.message(CommandStart())
@@ -31,7 +23,7 @@ async def command_start_handler(message: Message) -> None:
     logger.info(f"Пользователь ввел команду /start: {message.from_user.full_name}")
 
     await response_message.answer(
-        text=text,  # Текст сообщения пользователю
+        text=greeting_text,  # Текст сообщения пользователю
         reply_markup=start_keyboard()  # Клавиатура
     )
 
@@ -43,7 +35,7 @@ async def start_menu_callback_handler(callback_query: CallbackQuery, state: FSMC
     logger.info(f"Пользователь вернулся в начальное меню: {callback_query.from_user.full_name}")
 
     await response_message.edit_text(
-        text,
+        greeting_text,
         reply_markup=start_keyboard()
     )
 

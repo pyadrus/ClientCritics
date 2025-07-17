@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 from dispatcher import router, bot
 from keyboards.PRIMO_keyboards import (selection_size_arbo_primo_table_keyboard_primo, selection_colour_keyboard,
                                        leave_review_primo_keyboard, the_send_button_keyboard_primo)
+from messages.messages import size_selection_text
 
 
 @router.callback_query(F.data == "arbo_primo_table")
@@ -13,7 +14,7 @@ async def arbo_primo_table(callback_query: CallbackQuery, state: FSMContext):
     """Выбор размера стола ARBO PRIMO"""
     await bot.send_message(
         callback_query.from_user.id,
-        "Выберите размер",
+        size_selection_text,
         reply_markup=selection_size_arbo_primo_table_keyboard_primo()
     )
 
