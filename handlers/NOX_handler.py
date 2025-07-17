@@ -16,7 +16,7 @@ ADMIN_ID = 535185511  # ID администратора
 
 
 @router.callback_query(F.data == "the_nox_table")
-async def the_nox_table(callback_query: CallbackQuery, state: FSMContext):
+async def handle_nox_table_selection(callback_query: CallbackQuery, state: FSMContext):
     """
     📌 Обработчик нажатия на кнопку "ARBO PRIMO".
     Показывает пользователю клавиатуру выбора размера стола.
@@ -30,7 +30,7 @@ async def the_nox_table(callback_query: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(StateFilter(States.size), F.data.in_(TABLE_SIZES_NOX.keys()))
-async def select_size_nox(callback_query: CallbackQuery, state: FSMContext):
+async def handle_nox_size_selected(callback_query: CallbackQuery, state: FSMContext):
     """
     ✍️ Пользователь нажал "Оставить отзыв".
     Переходим в состояние ожидания текстового отзыва.
@@ -42,18 +42,21 @@ async def select_size_nox(callback_query: CallbackQuery, state: FSMContext):
     logger.info(f"🟢 [{callback_query.from_user.id}] Выбран размер: {readable}")
     # logger.info(f"🟡 [{callback_query.from_user.id}] Пользователь согласился оставить отзыв")
 
-    await response_message.edit_text(
+    msg = await response_message.edit_text(
         "📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu()
     )
+    await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(States.photo)
 
 
 @router.message(StateFilter(States.photo))
-async def send_photo_handler(message: Message, state: FSMContext):
+async def handle_feedback_text_received(message: Message, state: FSMContext):
     """
     Сохраняет отзыв и просит пользователя отправить фото.
     """
     # Сохраняем текст отзыва
+    response_message = message
+
     feedback_text = message.text.strip()
     await state.update_data(feedback=feedback_text)
 
@@ -63,26 +66,45 @@ async def send_photo_handler(message: Message, state: FSMContext):
     except Exception as e:
         logger.warning(f"Не удалось удалить сообщение пользователя: {e}")
 
+    # Удаляем старое сообщение бота
+    data = await state.get_data()
+    last_bot_message_id = data.get("last_bot_message_id")
+    if last_bot_message_id:
+        try:
+            await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+        except Exception as e:
+            logger.warning(f"Не удалось удалить сообщение бота: {e}")
+
     # Отправляем сообщение от имени бота
-    await message.answer(
+    msg = await response_message.answer(
         "📸 Отправьте фото, но не более 10 штук",
         reply_markup=keyboard_start_menu()
     )
-
+    await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(States.video)
 
 
 @router.message(StateFilter(States.video))
-async def send_video_handler(message: Message, state: FSMContext):
+async def handle_photos_received(message: Message, state: FSMContext):
     """
     Сохраняет фото и просит пользователя отправить видео.
     """
+    response_message = message
     try:
         await message.delete()
     except Exception as e:
         logger.warning(f"Не удалось удалить сообщение с фото: {e}")
 
-    await message.answer(
+    # Удаляем старое сообщение бота
+    data = await state.get_data()
+    last_bot_message_id = data.get("last_bot_message_id")
+    if last_bot_message_id:
+        try:
+            await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+        except Exception as e:
+            logger.warning(f"Не удалось удалить сообщение бота: {e}")
+
+    await response_message.answer(
         "🎥 Отправьте видео, но не более 1 штуки",
         reply_markup=keyboard_video_handler()
     )
@@ -91,7 +113,8 @@ async def send_video_handler(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data == "skip_step")
-async def skip_step(callback_query: CallbackQuery, state: FSMContext):
+async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
+    response_message = callback_query.message
     data = await state.get_data()
     user_id = callback_query.from_user.id
     table_size = data.get("size", "unknown")
@@ -118,16 +141,18 @@ async def skip_step(callback_query: CallbackQuery, state: FSMContext):
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML")
 
     # Ответ пользователю
-    await callback_query.message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌")
+    await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
+                                     reply_markup=keyboard_start_menu())
     await state.clear()
 
 
 @router.message(StateFilter(States.sending))
-async def send_review_nox(message: Message, state: FSMContext):
+async def handle_final_review_submission(message: Message, state: FSMContext):
     """
     Обработка нажатия на кнопку "Отправить".
     Сохраняет все данные в базу и завершает процесс.
     """
+    response_message = message
     data = await state.get_data()
     user_id = message.from_user.id
     table_size = data.get("size", "unknown")
@@ -155,12 +180,16 @@ async def send_review_nox(message: Message, state: FSMContext):
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML")
 
     # Сообщение пользователю
-    await message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌")
+    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
+                                  reply_markup=keyboard_start_menu())
     await state.clear()
 
 
 def register_NOX_handlers():
     """Регистрация обработчиков"""
-    router.callback_query.register(the_nox_table)  # Регистрация обработчика
-    router.callback_query.register(select_size_nox)  # Регистрация обработчика
-    router.callback_query.register(send_review_nox)  # Регистрация обработчика
+    router.callback_query.register(handle_nox_table_selection)  # Регистрация обработчика
+    router.callback_query.register(handle_nox_size_selected)  # Регистрация обработчика
+    router.message.register(handle_feedback_text_received)  # Регистрация обработчика
+    router.message.register(handle_photos_received)  # Регистрация обработчика
+    router.callback_query.register(handle_skip_video_step)  # Регистрация обработчика
+    router.message.register(handle_final_review_submission)  # Регистрация обработчика
