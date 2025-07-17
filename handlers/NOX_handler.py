@@ -5,14 +5,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from loguru import logger
 
-from dispatcher import router, bot
+from dispatcher import router, bot, ADMIN_ID
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_video_handler)
+from keyboards.admin_keyboards import admin_keyboard
 from messages.messages import size_selection_text
 from models.models import Review
 from states.states import States
-
-ADMIN_ID = 535185511  # ID администратора
 
 
 @router.callback_query(F.data == "the_nox_table")
@@ -138,7 +137,7 @@ async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContex
         f"📏 Размер стола: {readable}\n"
         f"💬 Отзыв:\n{feedback_text}"
     )
-    await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML")
+    await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
 
     # Ответ пользователю
     await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
@@ -177,11 +176,10 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
         f"📏 Размер стола: {readable}\n"
         f"💬 Отзыв:\n{feedback_text}"
     )
-    await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML")
+    await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
 
     # Сообщение пользователю
-    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
-                                  reply_markup=keyboard_start_menu())
+    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌")
     await state.clear()
 
 
