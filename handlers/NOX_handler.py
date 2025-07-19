@@ -86,81 +86,9 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
     await state.set_state(States.video)
 
 
-# @router.message(StateFilter(States.video), F.photo)
-# async def handle_photos_received(message: Message, state: FSMContext):
-#     """
-#     Сохраняет фото и просит пользователя отправить видео.
-#     """
-#     response_message = message
-#     try:
-#         await message.delete()
-#     except Exception as e:
-#         logger.warning(f"Не удалось удалить сообщение с фото: {e}")
-#
-#     # Удаляем старое сообщение бота
-#     data = await state.get_data()
-#     last_bot_message_id = data.get("last_bot_message_id")
-#     if last_bot_message_id:
-#         try:
-#             await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
-#         except Exception as e:
-#             logger.warning(f"Не удалось удалить сообщение бота: {e}")
-#
-#     await response_message.answer(
-#         "🎥 Отправьте видео, но не более 1 штуки",
-#         reply_markup=keyboard_video_handler()
-#     )
-#
-#     await state.set_state(States.sending)
-
-
 # Словарь временного хранения альбомов
 album_buffer = defaultdict(list)
 
-
-# @router.message(StateFilter(States.video), F.media_group_id)
-# async def handle_photo_album(message: Message, state: FSMContext):
-#     """
-#     Обработка альбома (нескольких фото в одном сообщении).
-#     """
-#     media_group_id = message.media_group_id
-#     album_buffer[media_group_id].append(message)
-#
-#     await asyncio.sleep(1.5)
-#
-#     if len(album_buffer[media_group_id]) > 0 and album_buffer[media_group_id][-1].message_id == message.message_id:
-#         messages = album_buffer.pop(media_group_id)
-#         logger.info(f"📸 Получен альбом из {len(messages)} фото от пользователя {message.from_user.id}")
-#
-#         for msg in messages:
-#             try:
-#                 await msg.delete()
-#             except Exception as e:
-#                 logger.warning(f"Не удалось удалить фото из альбома: {e}")
-#
-#         data = await state.get_data()
-#
-#         # Предотвращаем многократную отправку
-#         if data.get("photo_response_sent"):
-#             return
-#
-#         # Удаляем старое сообщение бота
-#         last_bot_message_id = data.get("last_bot_message_id")
-#         if last_bot_message_id:
-#             try:
-#                 await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
-#             except Exception as e:
-#                 logger.warning(f"Не удалось удалить сообщение бота: {e}")
-#
-#         msg = await message.answer(
-#             "🎥 Отправьте видео, но не более 1 штуки",
-#             reply_markup=keyboard_video_handler()
-#         )
-#         await state.update_data(
-#             last_bot_message_id=msg.message_id,
-#             photo_response_sent=True  # <-- флаг, чтобы не отправлять снова
-#         )
-#         await state.set_state(States.sending)
 
 @router.message(StateFilter(States.video), F.photo)
 async def handle_photo_or_album(message: Message, state: FSMContext):
@@ -197,6 +125,7 @@ async def handle_photo_or_album(message: Message, state: FSMContext):
 
         await proceed_after_photos(message, state)
 
+
 async def proceed_after_photos(message: Message, state: FSMContext):
     data = await state.get_data()
 
@@ -220,6 +149,7 @@ async def proceed_after_photos(message: Message, state: FSMContext):
         photo_response_sent=True
     )
     await state.set_state(States.sending)
+
 
 @router.callback_query(F.data == "skip_step")
 async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
