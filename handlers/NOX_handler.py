@@ -13,13 +13,12 @@ from loguru import logger
 from dispatcher import router, bot, ADMIN_ID
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_video_handler, keyboard_confirm_or_cancel)
-from keyboards.admin_keyboards import admin_keyboard
 from messages.messages import size_selection_text
 from models.models import Review
 from states.states import States
 
 # Словарь временного хранения альбомов
-album_buffer = defaultdict(list)
+album_buffer = defaultdict(list)  # media_group_id -> List[Message]
 
 
 # 1. Выбор размера
@@ -58,7 +57,8 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
     await state.update_data(feedback=message.text.strip())  # Сохраняем текст отзыва
     # Удаляем сообщение пользователя
     await try_delete(message)
-    # Удаляем старое сообщение бота
+
+    # Удаляем старое сообщение бота (📝 Напишите ваш отзыв в сообщении 👇)
     data = await state.get_data()
     last_bot_message_id = data.get("last_bot_message_id")
     if last_bot_message_id:
@@ -66,39 +66,62 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
             await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
         except Exception as e:
             logger.warning(f"Не удалось удалить сообщение бота: {e}")
+
     # Отправляем сообщение от имени бота
-    msg = await message.answer("📸 Отправьте фото, но не более 10 штук", reply_markup=keyboard_start_menu())
+    msg = await message.answer("📸 Отправьте фото и видео, но не более 10 штук", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
-    await state.set_state(States.video)
+    await state.set_state(States.photo_video)
 
 
 # 3. Фото и альбомы
-@router.message(StateFilter(States.video), F.photo)
-async def handle_photo_or_album(message: Message, state: FSMContext):
-    """
-    Обрабатывает как одиночные фото, так и альбомы (media_group_id).
-    """
+@router.message(StateFilter(States.photo_video), F.photo | F.video)
+async def handle_media_group(message: Message, state: FSMContext):
     if message.media_group_id:
-        # Это альбом → сохраняем во временный буфер
-        media_group_id = message.media_group_id
-        album_buffer[media_group_id].append(message)
+        album_buffer[message.media_group_id].append(message)
         await asyncio.sleep(1.5)
-        if len(album_buffer[media_group_id]) > 0 and album_buffer[media_group_id][-1].message_id == message.message_id:
-            messages = album_buffer.pop(media_group_id)
-            logger.info(f"📸 Получен альбом из {len(messages)} фото от пользователя {message.from_user.id}")
+        # Последнее сообщение в альбоме
+        if album_buffer[message.media_group_id][-1].message_id == message.message_id:
+            messages = album_buffer.pop(message.media_group_id)
+            logger.info(f"📸🎥 Получен альбом ({len(messages)} медиа) от пользователя {message.from_user.id}")
+
+            # Удаляем все сообщения из чата
             for msg in messages:
                 try:
                     await msg.delete()
                 except Exception as e:
-                    logger.warning(f"Не удалось удалить фото из альбома: {e}")
-            await proceed_after_photos(message, state)
+                    logger.warning(f"❗ Не удалось удалить медиа из альбома: {e}")
+
+            # Сохраняем фото и видео
+            photos = []
+            video = None
+            for msg in messages:
+                if msg.photo:
+                    photos.append(msg.photo[-1].file_id)
+                elif msg.video:
+                    video = msg.video.file_id
+
+            # Обновляем состояние
+            data = await state.get_data()
+            await state.update_data(
+                photo_ids=photos,
+                video_id=video,
+                photo_response_sent=True
+            )
+
+            # Удаляем предыдущее сообщение бота
+            last_bot_message_id = data.get("last_bot_message_id")
+            if last_bot_message_id:
+                await safe_delete(message.chat.id, last_bot_message_id)
+
+            # TODO ⚠️ Проверка на альбом. Упростить схему работы
+            msg = await message.answer(
+                "✅ Медиа успешно получены! Отзыв почти готов.",
+                reply_markup=keyboard_video_handler()
+            )
+            await state.update_data(last_bot_message_id=msg.message_id)
+            await state.set_state(States.sending)
     else:
-        # Это одиночное фото
-        logger.info(f"📸 Получено одиночное фото от пользователя {message.from_user.id}")
-        try:
-            await message.delete()
-        except Exception as e:
-            logger.warning(f"Не удалось удалить одиночное фото: {e}")
+        # Не альбом → как раньше
         await proceed_after_photos(message, state)
 
 
@@ -121,7 +144,6 @@ async def proceed_after_photos(message: Message, state: FSMContext):
         last_bot_message_id=msg.message_id,
         photo_response_sent=True
     )
-    photo_list = []
     # Сохраняем фото
     photo_id = message.photo[-1].file_id  # Получаем лучшее качество
     photo_list = data.get("photo_ids", [])
@@ -174,7 +196,6 @@ async def sending_message_admin(user_id: int, readable: str, feedback_text: str)
 # 📸 Универсальная функция отправки отзыва
 async def send_review_to_user_and_admin(
         user_id: int,
-        chat_id: int,
         message: Message,
         readable: str,
         feedback_text: str,
@@ -198,28 +219,27 @@ async def send_review_to_user_and_admin(
 
 
 # ✅ Пропуск видео
-@router.callback_query(F.data == "skip_step")
-async def handle_skip_video_step(callback: CallbackQuery, state: FSMContext):
-    _, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(state)
-
-    Review.create(
-        user_id=callback.from_user.id,
-        table_size=readable,
-        feedback_status=feedback_status,
-        feedback_text=feedback_text,
-    )
-    logger.success(f"✅ [{callback.from_user.id}] Отзыв сохранён (без видео)")
-
-    await send_review_to_user_and_admin(
-        user_id=callback.from_user.id,
-        chat_id=callback.message.chat.id,
-        message=callback.message,
-        readable=readable,
-        feedback_text=feedback_text,
-        photo_ids=photo_ids,
-        video_id=video_id
-    )
-    await state.clear()
+# @router.callback_query(F.data == "skip_step")
+# async def handle_skip_video_step(callback: CallbackQuery, state: FSMContext):
+#     _, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(state)
+#
+#     Review.create(
+#         user_id=callback.from_user.id,
+#         table_size=readable,
+#         feedback_status=feedback_status,
+#         feedback_text=feedback_text,
+#     )
+#     logger.success(f"✅ [{callback.from_user.id}] Отзыв сохранён (без видео)")
+#
+#     await send_review_to_user_and_admin(
+#         user_id=callback.from_user.id,
+#         message=callback.message,
+#         readable=readable,
+#         feedback_text=feedback_text,
+#         photo_ids=photo_ids,
+#         video_id=video_id
+#     )
+#     await state.clear()
 
 
 # 📹 Обработка видео-отзыва
@@ -269,7 +289,6 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
 
     await send_review_to_user_and_admin(
         user_id=callback.from_user.id,
-        chat_id=callback.message.chat.id,
         message=callback.message,
         readable=readable,
         feedback_text=feedback_text,
@@ -279,15 +298,15 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
     await state.clear()
 
 
-@router.callback_query(F.data == "confirm_feedback")
-async def confirm_feedback(callback: CallbackQuery, state: FSMContext):
-    table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
-        state)
-    await sending_message_admin(callback.from_user.id, readable, feedback_text)
-
-    await callback.message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
-                                     reply_markup=admin_keyboard())
-    await state.clear()
+# @router.callback_query(F.data == "confirm_feedback")
+# async def confirm_feedback(callback: CallbackQuery, state: FSMContext):
+#     table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
+#         state)
+#     await sending_message_admin(callback.from_user.id, readable, feedback_text)
+#
+#     await callback.message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
+#                                      reply_markup=admin_keyboard())
+#     await state.clear()
 
 
 def register_NOX_handlers():
@@ -295,6 +314,6 @@ def register_NOX_handlers():
     router.callback_query.register(handle_nox_table_selection)  # Регистрация обработчика
     router.callback_query.register(handle_nox_size_selected)  # Регистрация обработчика
     router.message.register(handle_feedback_text_received)  # Регистрация обработчика
-    router.message.register(handle_photo_or_album)  # Регистрация обработчика
-    router.callback_query.register(handle_skip_video_step)  # Регистрация обработчика
+    router.message.register(handle_media_group)  # Регистрация обработчика
+    # router.callback_query.register(handle_skip_video_step)  # Регистрация обработчика
     router.message.register(handle_final_review_submission)  # Регистрация обработчика

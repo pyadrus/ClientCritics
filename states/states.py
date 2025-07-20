@@ -8,7 +8,7 @@ class States(StatesGroup):
     colour = State()  # Цвет
     feedback = State()  # Отзыв
     sending = State()  # Отправка
+    photo_video = State()  # Фото
+    # video = State()  # Видео
     photo = State()  # Фото
-    video = State()  # Видео
-
     confirm = State()  # Подтверждение
