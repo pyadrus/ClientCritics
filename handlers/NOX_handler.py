@@ -43,7 +43,6 @@ async def handle_nox_size_selected(callback_query: CallbackQuery, state: FSMCont
     readable = TABLE_SIZES_NOX[selected_size]  # selected_size — это ключ
     await state.update_data(size=selected_size)
     logger.info(f"🟢 [{callback_query.from_user.id}] Выбран размер: {readable}")
-    # logger.info(f"🟡 [{callback_query.from_user.id}] Пользователь согласился оставить отзыв")
     msg = await response_message.edit_text(
         "📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu()
     )
@@ -146,25 +145,21 @@ async def proceed_after_photos(message: Message, state: FSMContext):
 async def retrieves_users_entered_data(state):
     """Получение данных из состояния FSM """
     data = await state.get_data()
-    # data = await state.get_data()
     table_size = data.get("size", "unknown")
-    # table_size = data.get("size", "unknown")
     readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
-    # readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
     feedback_text = data.get("feedback", "⛔ Отзыв отсутствует")
-    # feedback_text = data.get("feedback", "")
     feedback_status = data.get("feedback", "no")
+    photo_ids = data.get("photo_ids", [])
+    video_id = data.get("video_id")
+    return table_size, readable, feedback_text, feedback_status, photo_ids, video_id
 
 
 @router.callback_query(F.data == "skip_step")
 async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
     response_message = callback_query.message
 
-    # user_id = callback_query.from_user.id
-
-    photo_ids = data.get("photo_ids", [])
-    video_id = data.get("video_id")
-    feedback_text = data.get("feedback", "")
+    table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
+        state)
 
     # Сохраняем в базу данных
     Review.create(
@@ -205,12 +200,10 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     Сохраняет все данные в базу и завершает процесс.
     """
     response_message = message
-
-    # user_id = message.from_user.id
-
-    photo_ids = data.get("photo_ids", [])
-    video_id = data.get("video_id")
+    table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
+        state)
     await state.update_data(video_id=video_id)
+
     # Сохраняем в базу данных
     Review.create(
         user_id=message.from_user.id,
