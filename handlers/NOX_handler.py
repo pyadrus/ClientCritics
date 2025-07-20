@@ -12,7 +12,7 @@ from loguru import logger
 
 from dispatcher import router, bot, ADMIN_ID
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
-                                     keyboard_video_handler, keyboard_confirm_or_cancel)
+                                     keyboard_confirm_or_cancel)
 from messages.messages import size_selection_text
 from models.models import Review
 from states.states import States
