@@ -11,7 +11,7 @@ from loguru import logger
 
 from dispatcher import router, bot, ADMIN_ID
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
-                                     keyboard_video_handler)
+                                     keyboard_video_handler, confirmation_keyboard)
 from keyboards.admin_keyboards import admin_keyboard
 from messages.messages import size_selection_text
 from models.models import Review
@@ -133,7 +133,7 @@ async def proceed_after_photos(message: Message, state: FSMContext):
         last_bot_message_id=msg.message_id,
         photo_response_sent=True
     )
-
+    photo_list = []
     # Сохраняем фото
     photo_id = message.photo[-1].file_id  # Получаем лучшее качество
     photo_list = data.get("photo_ids", [])
@@ -156,8 +156,6 @@ async def retrieves_users_entered_data(state):
 
 @router.callback_query(F.data == "skip_step")
 async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
-    response_message = callback_query.message
-
     table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
         state)
 
@@ -178,17 +176,23 @@ async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContex
     if photo_ids:
         media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
         if len(media) == 1:
-            await response_message.answer_photo(media[0].media, caption=feedback_text, reply_markup=admin_keyboard())
+            await callback_query.message.answer_photo(media[0].media, caption=feedback_text,
+                                                      reply_markup=confirmation_keyboard())
         else:
-            media[0].caption = feedback_text  # добавим подпись к первому фото
-            await response_message.answer_media_group(media, reply_markup=admin_keyboard())
+            media[0].caption = feedback_text
+            await callback_query.message.answer_media_group(media)  # Без reply_markup!
+            # Отдельное сообщение с кнопками
+            await callback_query.message.answer(
+                "⬆️ Это ваши фото отзыва\n\n👇 Что дальше?",
+                reply_markup=confirmation_keyboard()
+            )
     # Отправка видео (если есть)
     if video_id and not photo_ids:
-        await response_message.answer_video(video_id, caption=feedback_text, reply_markup=admin_keyboard())
+        await callback_query.message.answer_video(video_id, caption=feedback_text, reply_markup=confirmation_keyboard())
 
     # Ответ пользователю
-    await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
-                                     reply_markup=admin_keyboard())
+    # await callback_query.message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
+    #                                        reply_markup=admin_keyboard())
 
     await state.clear()
 
@@ -199,7 +203,6 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     Обработка нажатия на кнопку "Отправить".
     Сохраняет все данные в базу и завершает процесс.
     """
-    response_message = message
     table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
         state)
     await state.update_data(video_id=video_id)
@@ -220,13 +223,18 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     if photo_ids:
         media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
         if len(media) == 1:
-            await response_message.answer_photo(media[0].media, caption=feedback_text, reply_markup=admin_keyboard())
+            await message.answer_photo(media[0].media, caption=feedback_text, reply_markup=confirmation_keyboard())
         else:
-            media[0].caption = feedback_text  # добавим подпись к первому фото
-            await response_message.answer_media_group(media, reply_markup=admin_keyboard())
+            media[0].caption = feedback_text
+            await message.answer_media_group(media)  # Без reply_markup!
+            # Отдельное сообщение с кнопками
+            await message.answer(
+                "⬆️ Это ваши фото отзыва\n\n👇 Что дальше?",
+                reply_markup=confirmation_keyboard()
+            )
     # Отправка видео (если есть)
     if video_id and not photo_ids:
-        await response_message.answer_video(video_id, caption=feedback_text, reply_markup=admin_keyboard())
+        await message.answer_video(video_id, caption=feedback_text, reply_markup=confirmation_keyboard())
 
     # Сообщение пользователю
     # await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌", reply_markup=admin_keyboard())
