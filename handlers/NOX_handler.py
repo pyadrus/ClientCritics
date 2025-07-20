@@ -196,13 +196,17 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     Сохраняет все данные в базу и завершает процесс.
     """
     response_message = message
+    # data = await state.get_data()
     data = await state.get_data()
     user_id = message.from_user.id
     table_size = data.get("size", "unknown")
     readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
     feedback_status = data.get("feedback", "no")
-    feedback_text = message.text.strip()
-    video_id = message.video.file_id
+    feedback_text = data.get("feedback", "")
+    # feedback_text = message.text.strip()
+    photo_ids = data.get("photo_ids", [])
+    video_id = data.get("video_id")
+    # video_id = message.video.file_id
     await state.update_data(video_id=video_id)
     # Сохраняем в базу данных
     Review.create(
@@ -221,13 +225,7 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     )
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
     # Получаем данные
-    data = await state.get_data()
-    photo_ids = data.get("photo_ids", [])
-    video_id = data.get("video_id")
-    feedback_text = data.get("feedback", "")
-    # Сообщение пользователю
-    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
-                                  reply_markup=admin_keyboard())
+
     # Отправка фото (если есть)
     if photo_ids:
         media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
@@ -239,6 +237,10 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     # Отправка видео (если есть)
     if video_id and not photo_ids:
         await response_message.answer_video(video_id, caption=feedback_text)
+
+    # Сообщение пользователю
+    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌", reply_markup=admin_keyboard())
+
     await state.clear()
 
 
