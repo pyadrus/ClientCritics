@@ -147,10 +147,15 @@ async def proceed_after_photos(message: Message, state: FSMContext):
 async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
     response_message = callback_query.message
     data = await state.get_data()
+    # data = await state.get_data()
     user_id = callback_query.from_user.id
     table_size = data.get("size", "unknown")
     readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
     feedback_text = data.get("feedback", "⛔ Отзыв отсутствует")
+    photo_ids = data.get("photo_ids", [])
+    video_id = data.get("video_id")
+    feedback_text = data.get("feedback", "")
+
     # Сохраняем в базу данных
     Review.create(
         user_id=user_id,
@@ -159,33 +164,26 @@ async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContex
         feedback_text=feedback_text
     )
     logger.success(f"✅ [{user_id}] Отзыв сохранён (без видео): size={readable}, text={feedback_text}")
-    # Отправляем сообщение админу
-    admin_text = (
-        f"📥 <b>Новый отзыв (без видео)</b>\n\n"
-        f"👤 Пользователь: <code>{user_id}</code>\n"
-        f"📏 Размер стола: {readable}\n"
-        f"💬 Отзыв:\n{feedback_text}"
-    )
-    await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
-    # Получаем данные
-    data = await state.get_data()
-    photo_ids = data.get("photo_ids", [])
-    video_id = data.get("video_id")
-    feedback_text = data.get("feedback", "")
-    # Ответ пользователю
-    await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
-                                     reply_markup=admin_keyboard())
+
+    # Отправка сообщения админу
+    await sending_message_admin(user_id, readable, feedback_text)
+
     # Отправка фото (если есть)
     if photo_ids:
         media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
         if len(media) == 1:
-            await response_message.answer_photo(media[0].media, caption=feedback_text)
+            await response_message.answer_photo(media[0].media, caption=feedback_text, reply_markup=admin_keyboard())
         else:
             media[0].caption = feedback_text  # добавим подпись к первому фото
-            await response_message.answer_media_group(media)
+            await response_message.answer_media_group(media, reply_markup=admin_keyboard())
     # Отправка видео (если есть)
     if video_id and not photo_ids:
-        await response_message.answer_video(video_id, caption=feedback_text)
+        await response_message.answer_video(video_id, caption=feedback_text, reply_markup=admin_keyboard())
+
+    # Ответ пользователю
+    await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
+                                     reply_markup=admin_keyboard())
+
     await state.clear()
 
 
@@ -216,7 +214,30 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
         feedback_text=feedback_text
     )
     logger.success(f"✅ [{user_id}] Отзыв сохранён: size={readable}, text={feedback_text}")
-    # Отправляем сообщение админу
+
+    # Отправка сообщения админу
+    await sending_message_admin(user_id, readable, feedback_text)
+
+    # Отправка фото (если есть)
+    if photo_ids:
+        media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
+        if len(media) == 1:
+            await response_message.answer_photo(media[0].media, caption=feedback_text, reply_markup=admin_keyboard())
+        else:
+            media[0].caption = feedback_text  # добавим подпись к первому фото
+            await response_message.answer_media_group(media, reply_markup=admin_keyboard())
+    # Отправка видео (если есть)
+    if video_id and not photo_ids:
+        await response_message.answer_video(video_id, caption=feedback_text, reply_markup=admin_keyboard())
+
+    # Сообщение пользователю
+    # await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌", reply_markup=admin_keyboard())
+
+    await state.clear()
+
+
+async def sending_message_admin(user_id, readable, feedback_text):
+    """Отправка сообщения админу"""
     admin_text = (
         f"📥 <b>Новый отзыв</b>\n\n"
         f"👤 Пользователь: <code>{user_id}</code>\n"
@@ -224,24 +245,6 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
         f"💬 Отзыв:\n{feedback_text}"
     )
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
-    # Получаем данные
-
-    # Отправка фото (если есть)
-    if photo_ids:
-        media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
-        if len(media) == 1:
-            await response_message.answer_photo(media[0].media, caption=feedback_text)
-        else:
-            media[0].caption = feedback_text  # добавим подпись к первому фото
-            await response_message.answer_media_group(media)
-    # Отправка видео (если есть)
-    if video_id and not photo_ids:
-        await response_message.answer_video(video_id, caption=feedback_text)
-
-    # Сообщение пользователю
-    await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌", reply_markup=admin_keyboard())
-
-    await state.clear()
 
 
 def register_NOX_handlers():
