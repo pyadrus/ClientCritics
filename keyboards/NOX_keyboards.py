@@ -63,13 +63,3 @@ def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
         ]
     ])
-
-
-# def confirmation_keyboard():
-#     """Клавиатура подтверждения отзыва"""
-#     return InlineKeyboardMarkup(inline_keyboard=[
-#         [
-#             InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_feedback"),
-#             InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
-#         ]
-#     ])
