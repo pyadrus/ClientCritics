@@ -56,11 +56,20 @@ def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
     )
 
 
-def confirmation_keyboard():
-    """Клавиатура подтверждения отзыва"""
+def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_feedback"),
-            InlineKeyboardButton(text="❌ Отменить", callback_data="cancel_feedback")
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_review"),
+            InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
         ]
     ])
+
+
+# def confirmation_keyboard():
+#     """Клавиатура подтверждения отзыва"""
+#     return InlineKeyboardMarkup(inline_keyboard=[
+#         [
+#             InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_feedback"),
+#             InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
+#         ]
+#     ])
