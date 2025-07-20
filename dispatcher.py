@@ -9,9 +9,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env")
 TOKEN = os.getenv("BOT_TOKEN")  # Токен бота
 
-
 ADMIN_ID = 535185511  # ID администратора
-
 
 dp = Dispatcher()
 

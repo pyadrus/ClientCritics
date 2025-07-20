@@ -44,14 +44,6 @@ def keyboard_start_menu():
                 InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"),
             ]])
 
-    # def leave_review_nox_keyboard() -> InlineKeyboardMarkup:
-    #     """Клавиатура согласия отставить отзыв"""
-    #     return InlineKeyboardMarkup(
-    #         inline_keyboard=[
-    #             [InlineKeyboardButton(text="Оставить отзыв", callback_data="leave_review_nox")],
-    #         ]
-    #     )
-
 
 def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
     """Клавиатура согласия отправить отзыв"""
@@ -62,3 +54,13 @@ def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def confirmation_keyboard():
+    """Клавиатура подтверждения отзыва"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_feedback"),
+            InlineKeyboardButton(text="❌ Отменить", callback_data="cancel_feedback")
+        ]
+    ])

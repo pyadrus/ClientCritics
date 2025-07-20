@@ -10,3 +10,5 @@ class States(StatesGroup):
     sending = State()  # Отправка
     photo = State()  # Фото
     video = State()  # Видео
+
+    confirm = State()  # Подтверждение

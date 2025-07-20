@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 from collections import defaultdict
-
+from aiogram import types
 from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -148,6 +148,13 @@ async def proceed_after_photos(message: Message, state: FSMContext):
         last_bot_message_id=msg.message_id,
         photo_response_sent=True
     )
+
+    # Сохраняем фото
+    photo_id = message.photo[-1].file_id  # Получаем лучшее качество
+    photo_list = data.get("photo_ids", [])
+    photo_list.append(photo_id)
+    await state.update_data(photo_ids=photo_list)
+
     await state.set_state(States.sending)
 
 
@@ -179,9 +186,28 @@ async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContex
     )
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
 
+    # Получаем данные
+    data = await state.get_data()
+    photo_ids = data.get("photo_ids", [])
+    video_id = data.get("video_id")
+    feedback_text = data.get("feedback", "")
+
     # Ответ пользователю
     await response_message.edit_text("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌",
                                      reply_markup=keyboard_start_menu())
+    # Отправка фото (если есть)
+    if photo_ids:
+        media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
+        if len(media) == 1:
+            await response_message.answer_photo(media[0].media, caption=feedback_text)
+        else:
+            media[0].caption = feedback_text  # добавим подпись к первому фото
+            await response_message.answer_media_group(media)
+
+    # Отправка видео (если есть)
+    if video_id and not photo_ids:
+        await response_message.answer_video(video_id, caption=feedback_text)
+
     await state.clear()
 
 
@@ -198,7 +224,8 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
     feedback_status = data.get("feedback", "no")
     feedback_text = message.text.strip()
-
+    video_id = message.video.file_id
+    await state.update_data(video_id=video_id)
     # Сохраняем в базу данных
     Review.create(
         user_id=user_id,
@@ -218,8 +245,28 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     )
     await bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="HTML", reply_markup=admin_keyboard())
 
+    # Получаем данные
+    data = await state.get_data()
+    photo_ids = data.get("photo_ids", [])
+    video_id = data.get("video_id")
+    feedback_text = data.get("feedback", "")
+
     # Сообщение пользователю
     await response_message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌")
+
+    # Отправка фото (если есть)
+    if photo_ids:
+        media = [types.InputMediaPhoto(media=pid) for pid in photo_ids]
+        if len(media) == 1:
+            await response_message.answer_photo(media[0].media, caption=feedback_text)
+        else:
+            media[0].caption = feedback_text  # добавим подпись к первому фото
+            await response_message.answer_media_group(media)
+
+    # Отправка видео (если есть)
+    if video_id and not photo_ids:
+        await response_message.answer_video(video_id, caption=feedback_text)
+
     await state.clear()
 
 
