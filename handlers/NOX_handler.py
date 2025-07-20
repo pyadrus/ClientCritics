@@ -143,30 +143,41 @@ async def proceed_after_photos(message: Message, state: FSMContext):
     await state.set_state(States.sending)
 
 
+async def retrieves_users_entered_data(state):
+    """Получение данных из состояния FSM """
+    data = await state.get_data()
+    # data = await state.get_data()
+    table_size = data.get("size", "unknown")
+    # table_size = data.get("size", "unknown")
+    readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
+    # readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
+    feedback_text = data.get("feedback", "⛔ Отзыв отсутствует")
+    # feedback_text = data.get("feedback", "")
+    feedback_status = data.get("feedback", "no")
+
+
 @router.callback_query(F.data == "skip_step")
 async def handle_skip_video_step(callback_query: CallbackQuery, state: FSMContext):
     response_message = callback_query.message
-    data = await state.get_data()
-    # data = await state.get_data()
-    user_id = callback_query.from_user.id
-    table_size = data.get("size", "unknown")
-    readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
-    feedback_text = data.get("feedback", "⛔ Отзыв отсутствует")
+
+    # user_id = callback_query.from_user.id
+
     photo_ids = data.get("photo_ids", [])
     video_id = data.get("video_id")
     feedback_text = data.get("feedback", "")
 
     # Сохраняем в базу данных
     Review.create(
-        user_id=user_id,
+        user_id=callback_query.from_user.id,
         table_size=readable,
-        feedback_status="skipped_video",  # укажи явно статус
+        feedback_status=feedback_status,
         feedback_text=feedback_text
     )
-    logger.success(f"✅ [{user_id}] Отзыв сохранён (без видео): size={readable}, text={feedback_text}")
+    logger.success(
+        f"✅ [{callback_query.from_user.id}] Отзыв сохранён (без видео): size={readable}, text={feedback_text}")
 
     # Отправка сообщения админу
-    await sending_message_admin(user_id, readable, feedback_text)
+    await sending_message_admin(callback_query.from_user.id, readable, feedback_text)
 
     # Отправка фото (если есть)
     if photo_ids:
@@ -194,29 +205,23 @@ async def handle_final_review_submission(message: Message, state: FSMContext):
     Сохраняет все данные в базу и завершает процесс.
     """
     response_message = message
-    # data = await state.get_data()
-    data = await state.get_data()
-    user_id = message.from_user.id
-    table_size = data.get("size", "unknown")
-    readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
-    feedback_status = data.get("feedback", "no")
-    feedback_text = data.get("feedback", "")
-    # feedback_text = message.text.strip()
+
+    # user_id = message.from_user.id
+
     photo_ids = data.get("photo_ids", [])
     video_id = data.get("video_id")
-    # video_id = message.video.file_id
     await state.update_data(video_id=video_id)
     # Сохраняем в базу данных
     Review.create(
-        user_id=user_id,
+        user_id=message.from_user.id,
         table_size=readable,
         feedback_status=feedback_status,
         feedback_text=feedback_text
     )
-    logger.success(f"✅ [{user_id}] Отзыв сохранён: size={readable}, text={feedback_text}")
+    logger.success(f"✅ [{message.from_user.id}] Отзыв сохранён: size={readable}, text={feedback_text}")
 
     # Отправка сообщения админу
-    await sending_message_admin(user_id, readable, feedback_text)
+    await sending_message_admin(message.from_user.id, readable, feedback_text)
 
     # Отправка фото (если есть)
     if photo_ids:
