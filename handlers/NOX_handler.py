@@ -139,8 +139,8 @@ async def handle_media_group(message: Message, state: FSMContext):
         await state.set_state(States.sending)
 
 
-async def safe_delete(chat_id: int, message_id: int):
-    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+# async def safe_delete(chat_id: int, message_id: int):
+#     await bot.delete_message(chat_id=chat_id, message_id=message_id)
 
 
 async def retrieves_users_entered_data(state):
