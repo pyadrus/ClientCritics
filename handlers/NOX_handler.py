@@ -166,8 +166,11 @@ async def handle_media_group(message: Message, state: FSMContext):
 @router.callback_query(F.data == "confirm_review")
 async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    table_size = data.get("size", "unknown")
-    readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
+    # table_size = data.get("size", "unknown")
+    # readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
+
+    table_size = data.get("size")
+
     feedback_text = data.get("feedback", "")
     photo_ids = data.get("photo_ids", [])
     video_ids = data.get("video_ids", [])
@@ -187,7 +190,7 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
     await send_review_to_user_and_admin(
         user_id=callback.from_user.id,
         message=callback.message,
-        readable=readable,
+        table_size=table_size,  # Размер стола
         feedback_text=feedback_text,
         photo_ids=photo_ids,
         video_ids=video_ids,
@@ -199,26 +202,33 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin(user_id, message, readable, feedback_text, photo_ids, video_ids=None,
+async def send_review_to_user_and_admin(user_id, message, table_size, feedback_text, photo_ids, video_ids=None,
                                         target_chat_id=None):
     chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
 
-    # 1. Текст перед медиа
-    await bot.send_message(
-        chat_id=chat_id,
-        text=f"📩 Новый отзыв от пользователя {user_id}!\n\n📦 Стол: {readable}\n✍️ Отзыв:\n{feedback_text}",
+    text = (
+        f"📩 Отзыв от пользователя {user_id}!\n\n"
+        f"📦 Стол: ARBO NOX\n"
+        f"📦 Размер стола: {table_size}\n"
+        f"✍️ Отзыв: {feedback_text}"
     )
+
+    # 1. Текст перед медиа
+    # await bot.send_message(
+    #     chat_id=chat_id,
+    #     text=text,
+    # )
 
     # 2. Собираем общий альбом
     media_group = []
     if photo_ids:
         for idx, pid in enumerate(photo_ids):
-            media_group.append(InputMediaPhoto(media=pid, caption=feedback_text if idx == 0 else None))
+            media_group.append(InputMediaPhoto(media=pid, caption=text if idx == 0 else None))
 
     if video_ids:
         for idx, vid in enumerate(video_ids):
             # Если нет фото и это первое видео — добавим подпись
-            media_group.append(InputMediaVideo(media=vid, caption=feedback_text if not photo_ids and idx == 0 else None))
+            media_group.append(InputMediaVideo(media=vid, caption=text if not photo_ids and idx == 0 else None))
 
     # 3. Отправляем альбомом (если что-то есть)
     if media_group:
@@ -226,7 +236,7 @@ async def send_review_to_user_and_admin(user_id, message, readable, feedback_tex
 
     # 4. Если не было фото/видео — отправим только текст
     if not media_group:
-        await bot.send_message(chat_id=chat_id, text=f"✍️ Отзыв:\n{feedback_text}")
+        await bot.send_message(chat_id=chat_id, text=text)
 
 
 def register_NOX_handlers():
