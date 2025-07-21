@@ -14,7 +14,6 @@ from dispatcher import router, bot, ID_GROUP
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_confirm_or_cancel)
 from messages.messages import size_selection_text
-from models.models import Review
 from states.states import States
 
 # Словарь временного хранения альбомов
@@ -41,6 +40,7 @@ async def handle_nox_size_selected(callback: CallbackQuery, state: FSMContext):
     Переходим в состояние ожидания текстового отзыва.
     """
     size_key = callback.data
+    size_key = TABLE_SIZES_NOX.get(size_key)
     await state.update_data(size=size_key)
     logger.warning(f"Пользователь выбрал размер {size_key}")
     msg = await callback.message.edit_text("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
@@ -73,12 +73,28 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
 @router.message(StateFilter(States.photo_video), F.photo | F.video)
 async def handle_media_group(message: Message, state: FSMContext):
     data = await state.get_data()
-    feedback_text = data.get("feedback_text", "✍️ Ваш отзыв")
+    feedback_text = data.get("feedback")
+    table_size = data.get("size")
+
+    text = (
+        f"📦 Стол: ARBO NOX\n"
+        f"Размер: {table_size}\n"
+        f"✍️ Отзыв: {feedback_text}\n"
+    )
 
     # Если это часть альбома
     if message.media_group_id:
         album_buffer[message.media_group_id].append(message)
         await asyncio.sleep(1.5)
+
+        # Удаляем старое сообщение бота (например: "📸 Отправьте фото и видео...")
+        last_bot_message_id = data.get("last_bot_message_id")
+        if last_bot_message_id:
+            try:
+                await bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+            except Exception as e:
+                logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
+
         if album_buffer[message.media_group_id][-1].message_id == message.message_id:
             messages = album_buffer.pop(message.media_group_id)
             logger.info(f"📸🎥 Получен альбом ({len(messages)} медиа) от пользователя {message.from_user.id}")
@@ -94,24 +110,29 @@ async def handle_media_group(message: Message, state: FSMContext):
 
             media_group = []
             for idx, pid in enumerate(photo_ids):
-                media_group.append(InputMediaPhoto(media=pid, caption=feedback_text if idx == 0 else None))
+                media_group.append(InputMediaPhoto(media=pid, caption=text if idx == 0 else None))
             for idx, vid in enumerate(video_ids):
                 media_group.append(
-                    InputMediaVideo(media=vid, caption=feedback_text if not photo_ids and idx == 0 else None))
+                    InputMediaVideo(media=vid, caption=text if not photo_ids and idx == 0 else None))
             if media_group:
                 await message.answer_media_group(media_group)
-            else:
-                await message.answer(feedback_text)
-            confirm_msg = await message.answer(
-                "🔎 Проверьте отзыв перед отправкой. Всё верно?",
-                reply_markup=keyboard_confirm_or_cancel()
-            )
+            confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
+                                               reply_markup=keyboard_confirm_or_cancel())
             await state.update_data(last_bot_message_id=confirm_msg.message_id)
             await state.set_state(States.sending)
     else:
         # Обработка одиночного медиа
         if data.get("photo_response_sent"):
             return
+
+        # Удаляем старое сообщение бота (например: "📸 Отправьте фото и видео...")
+        last_bot_message_id = data.get("last_bot_message_id")
+        if last_bot_message_id:
+            try:
+                await bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+            except Exception as e:
+                logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
+
         # Удаляем предыдущее сообщение бота
         last_bot_message_id = data.get("last_bot_message_id")
         if last_bot_message_id:
@@ -121,86 +142,79 @@ async def handle_media_group(message: Message, state: FSMContext):
             photo_ids = data.get("photo_ids", [])
             photo_ids.append(photo_id)
             await state.update_data(photo_ids=photo_ids, photo_response_sent=True)
-            media = [InputMediaPhoto(media=photo_id, caption=feedback_text)]
+            media = [InputMediaPhoto(media=photo_id, caption=text)]
             await message.answer_media_group(media)
         elif message.video:
             video_id = message.video.file_id
             video_ids = data.get("video_ids", [])
             video_ids.append(video_id)
             await state.update_data(video_ids=video_ids, photo_response_sent=True)
-            await message.answer_video(video_id, caption=feedback_text)
+            await message.answer_video(video_id, caption=text)
         else:
-            await message.answer(feedback_text)
-        confirm_msg = await message.answer(
-            "🔎 Проверьте отзыв перед отправкой. Всё верно?",
-            reply_markup=keyboard_confirm_or_cancel()
-        )
+            await message.answer(text)
+        confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
+                                           reply_markup=keyboard_confirm_or_cancel())
         await state.update_data(last_bot_message_id=confirm_msg.message_id)
         await state.set_state(States.sending)
 
 
-# async def safe_delete(chat_id: int, message_id: int):
-#     await bot.delete_message(chat_id=chat_id, message_id=message_id)
-
-
-async def retrieves_users_entered_data(state):
-    """📦 Получение данных из FSM"""
+@router.callback_query(F.data == "confirm_review")
+async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     table_size = data.get("size", "unknown")
     readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
-    return (
-        table_size,
-        readable,
-        data.get("feedback", "⛔ Отзыв отсутствует"),
-        data.get("feedback", "no"),
-        data.get("photo_ids", []),
-        data.get("video_ids", []),  # ранее было video_id
-    )
+    feedback_text = data.get("feedback", "")
+    photo_ids = data.get("photo_ids", [])
+    video_ids = data.get("video_ids", [])
 
+    logger.success(f"✅ [{callback.from_user.id}] Отзыв подтверждён и отправлен на модерацию")
 
-@router.callback_query(F.data == "confirm_review")
-async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext):
-    table_size, readable, feedback_text, feedback_status, photo_ids, video_id = await retrieves_users_entered_data(
-        state)
-    # Сохраняем отзыв
-    Review.create(user_id=callback.from_user.id, table_size=readable, feedback_status=feedback_status,
-                  feedback_text=feedback_text, )
-    logger.success(f"✅ [{callback.from_user.id}] Отзыв подтверждён и сохранён")
     await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+
+    # Отправка в группу на модерацию
     await send_review_to_user_and_admin(
         user_id=callback.from_user.id,
         message=callback.message,
         readable=readable,
         feedback_text=feedback_text,
         photo_ids=photo_ids,
-        video_ids=video_id if isinstance(video_id, list) else ([video_id] if video_id else [])  # ✅
+        video_ids=video_ids,
+        target_chat_id=ID_GROUP  # 👈 добавим параметр
     )
+
+    await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
     await state.clear()
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin(user_id, message, readable, feedback_text, photo_ids, video_ids=None):
-    await bot.send_message(chat_id=ID_GROUP,
-                           text=f"📩 Новый отзыв от пользователя {user_id}!\n\n📦 Стол: {readable}\n✍️ Отзыв:\n{feedback_text}", )
+async def send_review_to_user_and_admin(user_id, message, readable, feedback_text, photo_ids, video_ids=None,
+                                        target_chat_id=None):
+    chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
+
+    # 1. Текст перед медиа
+    await bot.send_message(
+        chat_id=chat_id,
+        text=f"📩 Новый отзыв от пользователя {user_id}!\n\n📦 Стол: {readable}\n✍️ Отзыв:\n{feedback_text}",
+    )
+
+    # 2. Собираем общий альбом
+    media_group = []
     if photo_ids:
-        media = [InputMediaPhoto(media=pid) for pid in photo_ids]
-        media[0].caption = feedback_text
-        if len(media) == 1:
-            await message.answer_photo(photo_ids[0], caption=feedback_text)
-        else:
-            await message.answer_media_group(media)
-            await message.answer("⬆️ Это ваши фото отзыва\n\n👇 Что дальше?")
+        for idx, pid in enumerate(photo_ids):
+            media_group.append(InputMediaPhoto(media=pid, caption=feedback_text if idx == 0 else None))
 
     if video_ids:
-        media = [InputMediaVideo(media=vid) for vid in video_ids]
-        if not photo_ids:
-            media[0].caption = feedback_text
-        await message.answer_media_group(media)
+        for idx, vid in enumerate(video_ids):
+            # Если нет фото и это первое видео — добавим подпись
+            media_group.append(InputMediaVideo(media=vid, caption=feedback_text if not photo_ids and idx == 0 else None))
 
-    if not photo_ids and not video_ids:
-        await message.answer(f"✍️ Отзыв:\n{feedback_text}")
+    # 3. Отправляем альбомом (если что-то есть)
+    if media_group:
+        await bot.send_media_group(chat_id=chat_id, media=media_group)
 
-    await message.answer("🎉 Спасибо за ваш отзыв! Он был успешно сохранён 🙌", reply_markup=keyboard_start_menu())
+    # 4. Если не было фото/видео — отправим только текст
+    if not media_group:
+        await bot.send_message(chat_id=chat_id, text=f"✍️ Отзыв:\n{feedback_text}")
 
 
 def register_NOX_handlers():
@@ -209,3 +223,5 @@ def register_NOX_handlers():
     router.callback_query.register(handle_nox_size_selected)  # Регистрация обработчика
     router.message.register(handle_feedback_text_received)  # Регистрация обработчика
     router.message.register(handle_media_group)  # Регистрация обработчика
+
+# 205
