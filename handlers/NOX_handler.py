@@ -13,6 +13,7 @@ from loguru import logger
 from dispatcher import router, bot, ID_GROUP
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_confirm_or_cancel)
+from keyboards.admin_keyboards import admin_keyboard
 from messages.messages import size_selection_text
 from states.states import States
 
@@ -213,13 +214,7 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
         f"✍️ Отзыв: {feedback_text}"
     )
 
-    # 1. Текст перед медиа
-    # await bot.send_message(
-    #     chat_id=chat_id,
-    #     text=text,
-    # )
-
-    # 2. Собираем общий альбом
+    # 1. Собираем общий альбом
     media_group = []
     if photo_ids:
         for idx, pid in enumerate(photo_ids):
@@ -227,16 +222,24 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
 
     if video_ids:
         for idx, vid in enumerate(video_ids):
-            # Если нет фото и это первое видео — добавим подпись
             media_group.append(InputMediaVideo(media=vid, caption=text if not photo_ids and idx == 0 else None))
 
-    # 3. Отправляем альбомом (если что-то есть)
+    # 2. Отправляем альбомом (если есть медиа)
     if media_group:
-        await bot.send_media_group(chat_id=chat_id, media=media_group)
+        media_group = media_group[:10]  # Ограничение Telegram
+        sent_messages = await bot.send_media_group(chat_id=chat_id, media=media_group)
 
-    # 4. Если не было фото/видео — отправим только текст
-    if not media_group:
-        await bot.send_message(chat_id=chat_id, text=text)
+        # 3. Навешиваем клавиатуру на первое сообщение из альбома
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Выберите действие:",
+            reply_to_message_id=sent_messages[0].message_id,
+            reply_markup=admin_keyboard()
+        )
+
+    # 4. Если нет фото/видео — отправляем только текст с клавиатурой
+    else:
+        await bot.send_message(chat_id=chat_id, text=text, reply_markup=admin_keyboard())
 
 
 def register_NOX_handlers():

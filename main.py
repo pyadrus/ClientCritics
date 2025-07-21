@@ -7,6 +7,7 @@ from loguru import logger
 from dispatcher import bot, dp
 from handlers.NOX_handler import register_NOX_handlers
 from handlers.PRIMO_handler import register_PRIMO_handlers
+from handlers.bot import register_handlers_publish
 from handlers.handlers import register_handlers
 from handlers.leave_review_handler import register_leave_review_handlers
 from models.models import create_tables
@@ -25,6 +26,8 @@ async def main() -> None:
     register_leave_review_handlers()  # Выбор продукта для отзыва
     register_NOX_handlers()  # Отзывы NOX
     register_PRIMO_handlers()  # Отзывы PRIMO
+
+    register_handlers_publish()  # Отправка отзывов на публикацию
 
 
 if __name__ == "__main__":
