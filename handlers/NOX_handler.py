@@ -10,7 +10,7 @@ from aiogram.types import InputMediaPhoto
 from aiogram.types import InputMediaVideo  # Добавь в импорты
 from loguru import logger
 
-from dispatcher import router, bot, ADMIN_ID
+from dispatcher import router, bot, ADMIN_ID, ID_GROUP
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_confirm_or_cancel)
 from messages.messages import size_selection_text
@@ -191,7 +191,7 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
 
 # 📸 Универсальная функция отправки отзыва
 async def send_review_to_user_and_admin(user_id, message, readable, feedback_text, photo_ids, video_ids=None):
-    await bot.send_message(chat_id=ADMIN_ID,
+    await bot.send_message(chat_id=ID_GROUP,
                            text=f"📩 Новый отзыв от пользователя {user_id}!\n\n📦 Стол: {readable}\n✍️ Отзыв:\n{feedback_text}", )
     if photo_ids:
         media = [InputMediaPhoto(media=pid) for pid in photo_ids]
