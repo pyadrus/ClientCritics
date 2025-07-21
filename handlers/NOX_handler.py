@@ -95,7 +95,8 @@ async def handle_media_group(message: Message, state: FSMContext):
             except Exception as e:
                 logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
 
-        if album_buffer[message.media_group_id][-1].message_id == message.message_id:
+        album = album_buffer[message.media_group_id]
+        if album and album[-1].message_id == message.message_id:
             messages = album_buffer.pop(message.media_group_id)
             logger.info(f"📸🎥 Получен альбом ({len(messages)} медиа) от пользователя {message.from_user.id}")
             photo_ids = []
@@ -115,7 +116,10 @@ async def handle_media_group(message: Message, state: FSMContext):
                 media_group.append(
                     InputMediaVideo(media=vid, caption=text if not photo_ids and idx == 0 else None))
             if media_group:
-                await message.answer_media_group(media_group)
+                media_msgs = await message.answer_media_group(media_group)
+                if media_msgs:
+                    preview_ids = [msg.message_id for msg in media_msgs]
+                    await state.update_data(preview_message_ids=preview_ids)
             confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
                                                reply_markup=keyboard_confirm_or_cancel())
             await state.update_data(last_bot_message_id=confirm_msg.message_id)
@@ -143,6 +147,7 @@ async def handle_media_group(message: Message, state: FSMContext):
             photo_ids.append(photo_id)
             await state.update_data(photo_ids=photo_ids, photo_response_sent=True)
             media = [InputMediaPhoto(media=photo_id, caption=text)]
+            media = media[:10]  # Ограничиваем до 10 фото
             await message.answer_media_group(media)
         elif message.video:
             video_id = message.video.file_id
@@ -170,6 +175,13 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
     logger.success(f"✅ [{callback.from_user.id}] Отзыв подтверждён и отправлен на модерацию")
 
     await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+    # Удаляем сообщение с предварительным просмотром отзыва (медиа или текст)
+    preview_ids = data.get("preview_message_ids", [])
+    for mid in preview_ids:
+        try:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=mid)
+        except Exception as e:
+            logger.warning(f"Не удалось удалить сообщение с медиа id={mid}: {e}")
 
     # Отправка в группу на модерацию
     await send_review_to_user_and_admin(
