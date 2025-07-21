@@ -3,10 +3,14 @@ from aiogram.fsm.state import StatesGroup, State
 
 
 class States(StatesGroup):
-    product = State()  # Продукт
+    # product = State()  # Продукт
     size = State()  # Размер
-    colour = State()  # Цвет
+    # colour = State()  # Цвет
     feedback = State()  # Отзыв
+
+
+
+
     sending = State()  # Отправка
     photo_video = State()  # Фото
     # video = State()  # Видео

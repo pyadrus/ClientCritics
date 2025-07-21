@@ -29,31 +29,12 @@ def selection_size_arbo_primo_table_keyboard_nox() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-# def keyboard_video_handler():
-#     return InlineKeyboardMarkup(
-#         inline_keyboard=[
-#             [InlineKeyboardButton(text="Пропустить", callback_data="skip_step"), ],
-#             [InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"), ],
-#         ])
-
-
 def keyboard_start_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"),
             ]])
-
-
-def the_send_button_keyboard_nox() -> InlineKeyboardMarkup:
-    """Клавиатура согласия отправить отзыв"""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="Отправить", callback_data="send_review_nox"),
-            ]
-        ]
-    )
 
 
 def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
