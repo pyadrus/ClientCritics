@@ -10,7 +10,7 @@ from aiogram.types import InputMediaPhoto
 from aiogram.types import InputMediaVideo  # Добавь в импорты
 from loguru import logger
 
-from dispatcher import router, bot, ADMIN_ID, ID_GROUP
+from dispatcher import router, bot, ID_GROUP
 from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
                                      keyboard_confirm_or_cancel)
 from messages.messages import size_selection_text
@@ -73,30 +73,24 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
 @router.message(StateFilter(States.photo_video), F.photo | F.video)
 async def handle_media_group(message: Message, state: FSMContext):
     data = await state.get_data()
+    feedback_text = data.get("feedback_text", "✍️ Ваш отзыв")
 
     # Если это часть альбома
     if message.media_group_id:
         album_buffer[message.media_group_id].append(message)
         await asyncio.sleep(1.5)
-
         if album_buffer[message.media_group_id][-1].message_id == message.message_id:
             messages = album_buffer.pop(message.media_group_id)
             logger.info(f"📸🎥 Получен альбом ({len(messages)} медиа) от пользователя {message.from_user.id}")
-
             photo_ids = []
             video_ids = []
-
             for msg in messages:
                 await msg.delete()
-
                 if msg.photo:
                     photo_ids.append(msg.photo[-1].file_id)
                 elif msg.video:
                     video_ids.append(msg.video.file_id)
-
             await state.update_data(photo_ids=photo_ids, video_ids=video_ids, photo_response_sent=True)
-
-            feedback_text = data.get("feedback_text", "✍️ Ваш отзыв")
 
             media_group = []
             for idx, pid in enumerate(photo_ids):
@@ -104,29 +98,24 @@ async def handle_media_group(message: Message, state: FSMContext):
             for idx, vid in enumerate(video_ids):
                 media_group.append(
                     InputMediaVideo(media=vid, caption=feedback_text if not photo_ids and idx == 0 else None))
-
             if media_group:
                 await message.answer_media_group(media_group)
             else:
                 await message.answer(feedback_text)
-
             confirm_msg = await message.answer(
                 "🔎 Проверьте отзыв перед отправкой. Всё верно?",
                 reply_markup=keyboard_confirm_or_cancel()
             )
             await state.update_data(last_bot_message_id=confirm_msg.message_id)
             await state.set_state(States.sending)
-
     else:
         # Обработка одиночного медиа
         if data.get("photo_response_sent"):
             return
-
         # Удаляем предыдущее сообщение бота
         last_bot_message_id = data.get("last_bot_message_id")
         if last_bot_message_id:
             await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
-        feedback_text = data.get("feedback_text", "✍️ Ваш отзыв")
         if message.photo:
             photo_id = message.photo[-1].file_id
             photo_ids = data.get("photo_ids", [])
