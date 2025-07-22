@@ -16,5 +16,3 @@ class StatesPrimo(StatesGroup):
     feedback_primo = State()  # Отзыв
     sending_primo = State()  # Отправка
     photo_video_primo = State()  # Фото
-    # photo_primo = State()  # Фото
-    # confirm_primo = State()  # Подтверждение
