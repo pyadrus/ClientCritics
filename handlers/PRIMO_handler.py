@@ -204,27 +204,61 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
         except Exception as e:
             logger.warning(f"Не удалось удалить сообщение с медиа id={mid}: {e}")
     # Отправка в группу на модерацию
+    # await send_review_to_user_and_admin_primo(
+    #     user_id=callback.from_user.id,
+    #     message=callback.message,
+    #     table_size=table_size,  # Размер стола
+    #     colour=colour,  # Цвет стола
+    #     feedback_text=feedback_text,
+    #     photo_ids=photo_ids,
+    #     video_ids=video_ids,
+    #     target_chat_id=ID_GROUP  # 👈 добавим параметр
+    # )
     await send_review_to_user_and_admin_primo(
-        user_id=callback.from_user.id,
+        user=callback.from_user, # Передаем весь объект пользователя
         message=callback.message,
-        table_size=table_size,  # Размер стола
+        table_size=table_size,
         colour=colour,  # Цвет стола
         feedback_text=feedback_text,
         photo_ids=photo_ids,
         video_ids=video_ids,
-        target_chat_id=ID_GROUP  # 👈 добавим параметр
+        target_chat_id=ID_GROUP
     )
     await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
     await state.clear()
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin_primo(user_id, message, table_size, colour, feedback_text, photo_ids,
+async def send_review_to_user_and_admin_primo(user, message, table_size, colour, feedback_text, photo_ids,
                                               video_ids=None,
                                               target_chat_id=None):
     chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
+
+    # --- Формируем информацию о пользователе ---
+    # Приоритет: username > Имя Фамилия > Имя > ID
+    user_info_parts = []
+    if user.first_name:
+        user_info_parts.append(user.first_name)
+    if user.last_name:
+        user_info_parts.append(user.last_name)
+
+    full_name = " ".join(user_info_parts).strip() if user_info_parts else ""
+
+    if user.username:
+        # Если есть username, показываем его с @
+        user_display = f"@{user.username}"
+        # Можно также добавить имя в скобках, если оно есть и отличается
+        # if full_name and full_name != user.username:
+        #     user_display += f" ({full_name})"
+    elif full_name:
+        # Если есть имя/фамилия, показываем их
+        user_display = full_name
+    else:
+        # Если ничего нет, показываем ID
+        user_display = f"ID: {user.id}"
+
     text = (
-        f"📩 Отзыв от пользователя {user_id}!\n"
+        f"📩 Отзыв от пользователя {user_display}!\n"
         f"📦 Стол: ARBO PRIMO\n"
         f"📏 Размер стола: {table_size}\n"
         f"🎨 Цвет стола: {colour}\n"  # Добавили цвет
@@ -251,7 +285,7 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, colo
                 "photos": photo_ids,
                 "videos": video_ids,
                 "text": text,
-                "user_id": user_id
+                "user_id": user.id
             }, f, ensure_ascii=False, indent=2)
         # 3. Навешиваем клавиатуру на первое сообщение из альбома
         await bot.send_message(
@@ -272,7 +306,7 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, colo
                 "photos": photo_ids,
                 "videos": video_ids,
                 "text": text,
-                "user_id": user_id
+                "user_id": user.id
             }, f, ensure_ascii=False, indent=2)
         await bot.send_message(
             chat_id=chat_id,

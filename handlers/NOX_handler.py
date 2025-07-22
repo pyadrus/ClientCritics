@@ -190,15 +190,36 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
         except Exception as e:
             logger.warning(f"Не удалось удалить сообщение с медиа id={mid}: {e}")
 
+    user_mention = ""
+    if callback.from_user.username:
+        user_mention = f"@{callback.from_user.username}"
+    else:
+        full_name = f"{callback.from_user.first_name or ''} {callback.from_user.last_name or ''}".strip()
+        if full_name:
+            user_mention = full_name
+        else:
+            user_mention = f"ID: {callback.from_user.id}"  # На всякий случай, если нет имени
+
     # Отправка в группу на модерацию
+    # await send_review_to_user_and_admin(
+    #     user_mention=user_mention,  # Передаем упоминание вместо ID
+    #     user_id=callback.from_user.id,
+    #     message=callback.message,
+    #     table_size=table_size,  # Размер стола
+    #     feedback_text=feedback_text,
+    #     photo_ids=photo_ids,
+    #     video_ids=video_ids,
+    #     target_chat_id=ID_GROUP  # 👈 добавим параметр
+    # )
+
     await send_review_to_user_and_admin(
-        user_id=callback.from_user.id,
+        user=callback.from_user, # Передаем весь объект пользователя
         message=callback.message,
-        table_size=table_size,  # Размер стола
+        table_size=table_size,
         feedback_text=feedback_text,
         photo_ids=photo_ids,
         video_ids=video_ids,
-        target_chat_id=ID_GROUP  # 👈 добавим параметр
+        target_chat_id=ID_GROUP
     )
 
     await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
@@ -206,12 +227,47 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin(user_id, message, table_size, feedback_text, photo_ids, video_ids=None,
-                                        target_chat_id=None):
+async def send_review_to_user_and_admin(user, message, table_size, feedback_text, photo_ids, video_ids=None, target_chat_id=None):
+    """
+    Отправляет отзыв в указанный чат.
+
+    Args:
+        user (aiogram.types.User): Объект пользователя, оставившего отзыв.
+        message (aiogram.types.Message): Сообщение, инициировавшее отправку.
+        table_size (str): Выбранный размер стола.
+        feedback_text (str): Текст отзыва.
+        photo_ids (list): Список ID фото.
+        video_ids (list, optional): Список ID видео. Defaults to None.
+        target_chat_id (int, optional): ID чата для отправки. Defaults to message.chat.id.
+    """
     chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
 
+    # --- Формируем информацию о пользователе ---
+    # Приоритет: username > Имя Фамилия > Имя > ID
+    user_info_parts = []
+    if user.first_name:
+        user_info_parts.append(user.first_name)
+    if user.last_name:
+        user_info_parts.append(user.last_name)
+
+    full_name = " ".join(user_info_parts).strip() if user_info_parts else ""
+
+    if user.username:
+        # Если есть username, показываем его с @
+        user_display = f"@{user.username}"
+        # Можно также добавить имя в скобках, если оно есть и отличается
+        # if full_name and full_name != user.username:
+        #     user_display += f" ({full_name})"
+    elif full_name:
+        # Если есть имя/фамилия, показываем их
+        user_display = full_name
+    else:
+        # Если ничего нет, показываем ID
+        user_display = f"ID: {user.id}"
+
+    # --- Формируем текст сообщения ---
     text = (
-        f"📩 Отзыв от пользователя {user_id}!\n\n"
+        f"📩 Отзыв от пользователя {user_display}!\n\n"
         f"📦 Стол: ARBO NOX\n"
         f"📦 Размер стола: {table_size}\n"
         f"✍️ Отзыв: {feedback_text}"
@@ -241,7 +297,7 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
                 "photos": photo_ids,
                 "videos": video_ids,
                 "text": text,
-                "user_id": user_id
+                "user_id": user.id
             }, f, ensure_ascii=False, indent=2)
         # 3. Навешиваем клавиатуру на первое сообщение из альбома
         await bot.send_message(
@@ -263,7 +319,7 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
                 "photos": photo_ids,
                 "videos": video_ids,
                 "text": text,
-                "user_id": user_id
+                "user_id": user.id
             }, f, ensure_ascii=False, indent=2)
         await bot.send_message(
             chat_id=chat_id,
