@@ -13,9 +13,9 @@ from aiogram.types import InputMediaVideo  # Добавь в импорты
 from loguru import logger
 
 from dispatcher import router, bot, ID_GROUP
-from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
-                                     keyboard_confirm_or_cancel)
+from keyboards.NOX_keyboards import keyboard_start_menu, keyboard_confirm_or_cancel
 from keyboards.admin_keyboards import admin_keyboard
+from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX
 from messages.messages import size_selection_text
 from states.states import States
 
@@ -31,7 +31,7 @@ async def handle_nox_table_selection(callback: CallbackQuery, state: FSMContext)
     📌 Обработчик нажатия на кнопку "Стол ARBO NOX".
     Показывает пользователю клавиатуру выбора размера стола.
     """
-    await callback.message.edit_text(size_selection_text, reply_markup=selection_size_arbo_primo_table_keyboard_nox())
+    await callback.message.edit_text(size_selection_text, reply_markup=selection_size_table_keyboard())
     logger.warning("Пользователь нажал кнопку 'Стол ARBO NOX'")
     await state.set_state(States.size)
 

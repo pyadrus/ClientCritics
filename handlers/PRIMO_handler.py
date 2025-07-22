@@ -81,9 +81,10 @@ from aiogram.types import InputMediaVideo  # Добавь в импорты
 from loguru import logger
 
 from dispatcher import router, bot, ID_GROUP
-from keyboards.NOX_keyboards import (selection_size_arbo_primo_table_keyboard_nox, TABLE_SIZES_NOX, keyboard_start_menu,
-                                     keyboard_confirm_or_cancel)
+from keyboards.NOX_keyboards import keyboard_start_menu, keyboard_confirm_or_cancel
+from keyboards.PRIMO_keyboards import COLOURS, selection_colour_keyboard  # Добавили selection_colour_keyboard
 from keyboards.admin_keyboards import admin_keyboard
+from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX
 from messages.messages import size_selection_text
 from states.states import StatesPrimo
 
@@ -99,28 +100,54 @@ async def handle_primo_table_selection(callback: CallbackQuery, state: FSMContex
     📌 Обработчик нажатия на кнопку "Стол ARBO PRIMO".
     Показывает пользователю клавиатуру выбора размера стола.
     """
-    await callback.message.edit_text(size_selection_text, reply_markup=selection_size_arbo_primo_table_keyboard_nox())
+    await callback.message.edit_text(size_selection_text, reply_markup=selection_size_table_keyboard())
     logger.warning("Пользователь нажал кнопку 'Стол ARBO PRIMO'")
     await state.set_state(StatesPrimo.size_primo)
 
 
-# 2. Ввод текста отзыва
+# 2. Выбор цвета (после выбора размера)
 @router.callback_query(StateFilter(StatesPrimo.size_primo), F.data.in_(TABLE_SIZES_NOX.keys()))
 async def handle_primo_size_selected(callback: CallbackQuery, state: FSMContext):
     """
-    ✍️ Пользователь нажал "Оставить отзыв".
-    Переходим в состояние ожидания текстового отзыва.
+    ✍️ Пользователь выбрал размер стола.
+    Сохраняем размер и переходим к выбору цвета.
     """
     size_key = callback.data
-    size_key = TABLE_SIZES_NOX.get(size_key)
-    await state.update_data(size=size_key)
-    logger.warning(f"Пользователь выбрал размер {size_key}")
-    msg = await callback.message.edit_text("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
+    size_value = TABLE_SIZES_NOX.get(size_key)
+    await state.update_data(size=size_value)
+    logger.warning(f"Пользователь выбрал размер {size_value}")
+
+    # Удаляем предыдущее сообщение
+    await callback.message.delete()
+
+    # Отправляем сообщение с выбором цвета
+    msg = await callback.message.answer("🎨 Выберите цвет стола:", reply_markup=selection_colour_keyboard())
+    await state.update_data(last_bot_message_id=msg.message_id)
+    await state.set_state(StatesPrimo.colour_primo)
+
+
+# 3. Получение отзыва (после выбора цвета)
+@router.callback_query(StateFilter(StatesPrimo.colour_primo), F.data.in_(COLOURS.keys()))
+async def select_colour_primo(callback_query: CallbackQuery, state: FSMContext):
+    """
+    🎨 Пользователь выбрал цвет.
+    Сохраняем цвет и запрашиваем текст отзыва.
+    """
+    colour_key = callback_query.data
+    colour_value = COLOURS.get(colour_key)
+    await state.update_data(colour=colour_value)
+    logger.warning(f"Пользователь выбрал цвет {colour_value}")
+
+    # Удаляем сообщение с выбором цвета
+    await callback_query.message.delete()
+
+    # Запрашиваем текст отзыва
+    msg = await callback_query.message.answer("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.feedback_primo)
 
 
-# 3. Прием фото и видео
+# 4. Прием фото и видео (после ввода текста отзыва)
 @router.message(StateFilter(StatesPrimo.feedback_primo))
 async def handle_feedback_text_received_primo(message: Message, state: FSMContext):
     """
@@ -130,27 +157,31 @@ async def handle_feedback_text_received_primo(message: Message, state: FSMContex
     # Удаляем сообщение пользователя
     await message.delete()
     logger.warning(f"Пользователь отправил отзыв {message.text.strip()}")
+
     # Удаляем старое сообщение бота (📝 Напишите ваш отзыв в сообщении 👇)
     data = await state.get_data()
     last_bot_message_id = data.get("last_bot_message_id")
     if last_bot_message_id:
         await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+
     # Отправляем сообщение от имени бота
     msg = await message.answer("📸 Отправьте фото и видео, но не более 10 штук", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.photo_video_primo)
 
 
-# 3. Фото и альбомы
+# 5. Обработка фото и видео
 @router.message(StateFilter(StatesPrimo.photo_video_primo), F.photo | F.video)
 async def handle_media_group_primo(message: Message, state: FSMContext):
     data = await state.get_data()
     feedback_text = data.get("feedback")
     table_size = data.get("size")
+    colour = data.get("colour")  # Добавили цвет
 
     text = (
-        f"📦 Стол: ARBO NOX\n"
-        f"Размер: {table_size}\n"
+        f"📦 Стол: ARBO PRIMO\n"
+        f"📏 Размер: {table_size}\n"
+        f"🎨 Цвет: {colour}\n"
         f"✍️ Отзыв: {feedback_text}\n"
     )
 
@@ -158,7 +189,6 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
     if message.media_group_id:
         album_buffer[message.media_group_id].append(message)
         await asyncio.sleep(1.5)
-
         # Удаляем старое сообщение бота (например: "📸 Отправьте фото и видео...")
         last_bot_message_id = data.get("last_bot_message_id")
         if last_bot_message_id:
@@ -166,7 +196,6 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
                 await bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
             except Exception as e:
                 logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
-
         album = album_buffer[message.media_group_id]
         if album and album[-1].message_id == message.message_id:
             messages = album_buffer.pop(message.media_group_id)
@@ -180,7 +209,6 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
                 elif msg.video:
                     video_ids.append(msg.video.file_id)
             await state.update_data(photo_ids=photo_ids, video_ids=video_ids, photo_response_sent=True)
-
             media_group = []
             for idx, pid in enumerate(photo_ids):
                 media_group.append(InputMediaPhoto(media=pid, caption=text if idx == 0 else None))
@@ -200,7 +228,6 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
         # Обработка одиночного медиа
         if data.get("photo_response_sent"):
             return
-
         # Удаляем старое сообщение бота (например: "📸 Отправьте фото и видео...")
         last_bot_message_id = data.get("last_bot_message_id")
         if last_bot_message_id:
@@ -208,7 +235,6 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
                 await bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
             except Exception as e:
                 logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
-
         # Удаляем предыдущее сообщение бота
         last_bot_message_id = data.get("last_bot_message_id")
         if last_bot_message_id:
@@ -238,15 +264,12 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
 @router.callback_query(F.data == "confirm_review")
 async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-
     table_size = data.get("size")
-
+    colour = data.get("colour")  # Добавили цвет
     feedback_text = data.get("feedback", "")
     photo_ids = data.get("photo_ids", [])
     video_ids = data.get("video_ids", [])
-
     logger.success(f"✅ [{callback.from_user.id}] Отзыв подтверждён и отправлен на модерацию")
-
     await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
     # Удаляем сообщение с предварительным просмотром отзыва (медиа или текст)
     preview_ids = data.get("preview_message_ids", [])
@@ -255,52 +278,47 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=mid)
         except Exception as e:
             logger.warning(f"Не удалось удалить сообщение с медиа id={mid}: {e}")
-
     # Отправка в группу на модерацию
     await send_review_to_user_and_admin_primo(
         user_id=callback.from_user.id,
         message=callback.message,
         table_size=table_size,  # Размер стола
+        colour=colour,  # Цвет стола
         feedback_text=feedback_text,
         photo_ids=photo_ids,
         video_ids=video_ids,
         target_chat_id=ID_GROUP  # 👈 добавим параметр
     )
-
     await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
     await state.clear()
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin_primo(user_id, message, table_size, feedback_text, photo_ids, video_ids=None,
+async def send_review_to_user_and_admin_primo(user_id, message, table_size, colour, feedback_text, photo_ids,
+                                              video_ids=None,
                                               target_chat_id=None):
     chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
-
     text = (
-        f"📩 Отзыв от пользователя {user_id}!\n\n"
-        f"📦 Стол: ARBO NOX\n"
-        f"📦 Размер стола: {table_size}\n"
+        f"📩 Отзыв от пользователя {user_id}!\n"
+        f"📦 Стол: ARBO PRIMO\n"
+        f"📏 Размер стола: {table_size}\n"
+        f"🎨 Цвет стола: {colour}\n"  # Добавили цвет
         f"✍️ Отзыв: {feedback_text}"
     )
-
     # 1. Собираем общий альбом
     media_group = []
     if photo_ids:
         for idx, pid in enumerate(photo_ids):
             media_group.append(InputMediaPhoto(media=pid, caption=text if idx == 0 else None))
-
     if video_ids:
         for idx, vid in enumerate(video_ids):
             media_group.append(InputMediaVideo(media=vid, caption=text if not photo_ids and idx == 0 else None))
-
     # 2. Отправляем альбомом (если есть медиа)
     if media_group:
         media_group = media_group[:10]  # Ограничение Telegram
         sent_messages = await bot.send_media_group(chat_id=chat_id, media=media_group)
-
         PENDING_DIR = "pending_reviews"
         os.makedirs(PENDING_DIR, exist_ok=True)
-
         # Сохраняем JSON
         json_path = os.path.join(PENDING_DIR, f"{sent_messages[0].message_id}.json")
         with open(json_path, "w", encoding="utf-8") as f:
@@ -310,7 +328,6 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, feed
                 "text": text,
                 "user_id": user_id
             }, f, ensure_ascii=False, indent=2)
-
         # 3. Навешиваем клавиатуру на первое сообщение из альбома
         await bot.send_message(
             chat_id=chat_id,
@@ -318,7 +335,6 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, feed
             reply_to_message_id=sent_messages[0].message_id,
             reply_markup=admin_keyboard()
         )
-
     # 4. Если нет фото/видео — отправляем только текст с клавиатурой
     else:
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=admin_keyboard())
@@ -326,7 +342,8 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, feed
 
 def register_PRIMO_handlers():
     """Регистрация обработчиков"""
-    router.callback_query.register(handle_nox_table_selection)  # Регистрация обработчика
-    router.callback_query.register(handle_nox_size_selected)  # Регистрация обработчика
-    router.message.register(handle_feedback_text_received)  # Регистрация обработчика
-    router.message.register(handle_media_group)  # Регистрация обработчика
+    router.callback_query.register(handle_primo_table_selection)  # Регистрация обработчика
+    router.callback_query.register(handle_primo_size_selected)  # Регистрация обработчика
+    router.callback_query.register(select_colour_primo)  # Регистрация обработчика
+    # router.message.register(handle_feedback_text_received)  # Регистрация обработчика
+    # router.message.register(handle_media_group)  # Регистрация обработчика

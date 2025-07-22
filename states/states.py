@@ -12,7 +12,7 @@ class States(StatesGroup):
     photo_video = State()  # Фото
     # video = State()  # Видео
     photo = State()  # Фото
-    confirm = State()  # Подтверждение
+    # confirm = State()  # Подтверждение
 
 
 class StatesPrimo(StatesGroup):
