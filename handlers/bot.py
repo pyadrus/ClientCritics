@@ -9,11 +9,11 @@ from aiogram.types import InputMediaPhoto
 from aiogram.types import InputMediaVideo  # Добавь в импорты
 from loguru import logger
 
-from dispatcher import bot
+from dispatcher import bot, CHANNEL_ID
 from dispatcher import router
 
 # ID канала или группы для публикации отзывов
-CHANNEL_ID = "@tehnik_shanel"
+
 
 PENDING_DIR = "pending_reviews"
 
