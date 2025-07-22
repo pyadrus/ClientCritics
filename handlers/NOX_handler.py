@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import json
+import os
 from collections import defaultdict
 
 from aiogram import F
@@ -19,6 +21,7 @@ from states.states import States
 
 # Словарь временного хранения альбомов
 album_buffer = defaultdict(list)  # media_group_id -> List[Message]
+published_media_cache = {}
 
 
 # 1. Выбор размера
@@ -229,6 +232,19 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
         media_group = media_group[:10]  # Ограничение Telegram
         sent_messages = await bot.send_media_group(chat_id=chat_id, media=media_group)
 
+        PENDING_DIR = "pending_reviews"
+        os.makedirs(PENDING_DIR, exist_ok=True)
+
+        # Сохраняем JSON
+        json_path = os.path.join(PENDING_DIR, f"{sent_messages[0].message_id}.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "photos": photo_ids,
+                "videos": video_ids,
+                "text": text,
+                "user_id": user_id
+            }, f, ensure_ascii=False, indent=2)
+
         # 3. Навешиваем клавиатуру на первое сообщение из альбома
         await bot.send_message(
             chat_id=chat_id,
@@ -248,5 +264,3 @@ def register_NOX_handlers():
     router.callback_query.register(handle_nox_size_selected)  # Регистрация обработчика
     router.message.register(handle_feedback_text_received)  # Регистрация обработчика
     router.message.register(handle_media_group)  # Регистрация обработчика
-
-# 205

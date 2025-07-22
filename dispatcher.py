@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=".env")
 TOKEN = os.getenv("BOT_TOKEN")  # Токен бота
-ID_GROUP = os.getenv("ID_GROUP") # ID группы в телеграм, для пересылки сообщений
+ID_GROUP = os.getenv("ID_GROUP")  # ID группы в телеграм, для пересылки сообщений
 
 ADMIN_ID = 535185511  # ID администратора
 
