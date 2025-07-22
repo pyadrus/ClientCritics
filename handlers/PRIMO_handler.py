@@ -15,7 +15,7 @@ from loguru import logger
 from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS, \
-    keyboard_start_menu, keyboard_confirm_or_cancel
+    keyboard_start_menu, keyboard_confirm_or_cancel, keyboard_confirm_or_cancel_primo
 from messages.messages import size_selection_text
 from states.states import StatesPrimo
 
@@ -187,12 +187,12 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
         else:
             await message.answer(text)
         confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
-                                           reply_markup=keyboard_confirm_or_cancel())
+                                           reply_markup=keyboard_confirm_or_cancel_primo())
         await state.update_data(last_bot_message_id=confirm_msg.message_id)
         await state.set_state(StatesPrimo.sending_primo)
 
 
-@router.callback_query(F.data == "confirm_review")
+@router.callback_query(F.data == "confirm_review_primo")
 async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     table_size = data.get("size")
@@ -276,5 +276,6 @@ def register_PRIMO_handlers():
     router.callback_query.register(handle_primo_table_selection)  # Регистрация обработчика
     router.callback_query.register(handle_primo_size_selected)  # Регистрация обработчика
     router.callback_query.register(select_colour_primo)  # Регистрация обработчика
-    # router.message.register(handle_feedback_text_received)  # Регистрация обработчика
-    # router.message.register(handle_media_group)  # Регистрация обработчика
+    router.message.register(handle_feedback_text_received_primo)  # Регистрация обработчика
+    router.message.register(handle_media_group_primo)  # Регистрация обработчика
+    router.callback_query.register(handle_review_confirmation_primo)  # Регистрация обработчика

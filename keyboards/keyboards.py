@@ -126,3 +126,12 @@ def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
         ]
     ])
+
+
+def keyboard_confirm_or_cancel_primo() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_review_primo"),
+            InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
+        ]
+    ])
