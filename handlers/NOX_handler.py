@@ -231,12 +231,11 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
     if media_group:
         media_group = media_group[:10]  # Ограничение Telegram
         sent_messages = await bot.send_media_group(chat_id=chat_id, media=media_group)
+        first_message_id = sent_messages[0].message_id  # <-- Сохраняем ID первого сообщения
 
-        PENDING_DIR = "pending_reviews"
-        os.makedirs(PENDING_DIR, exist_ok=True)
-
-        # Сохраняем JSON
-        json_path = os.path.join(PENDING_DIR, f"{sent_messages[0].message_id}.json")
+        os.makedirs("pending_reviews", exist_ok=True)
+        # Сохраняем JSON с именем файла по ID первого сообщения
+        json_path = os.path.join("pending_reviews", f"{first_message_id}.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump({
                 "photos": photo_ids,
@@ -244,18 +243,34 @@ async def send_review_to_user_and_admin(user_id, message, table_size, feedback_t
                 "text": text,
                 "user_id": user_id
             }, f, ensure_ascii=False, indent=2)
-
         # 3. Навешиваем клавиатуру на первое сообщение из альбома
         await bot.send_message(
             chat_id=chat_id,
             text="Выберите действие:",
-            reply_to_message_id=sent_messages[0].message_id,
+            reply_to_message_id=first_message_id,  # <-- reply на первое сообщение
             reply_markup=admin_keyboard()
         )
 
     # 4. Если нет фото/видео — отправляем только текст с клавиатурой
     else:
-        await bot.send_message(chat_id=chat_id, text=text, reply_markup=admin_keyboard())
+        sent_message = await bot.send_message(chat_id=chat_id, text=text)  # <-- Сохраняем отправленное сообщение
+        message_id_to_reply = sent_message.message_id  # <-- Получаем его ID
+        os.makedirs("pending_reviews", exist_ok=True)
+        # Сохраняем JSON с именем файла по ID отправленного сообщения
+        json_path = os.path.join("pending_reviews", f"{message_id_to_reply}.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "photos": photo_ids,
+                "videos": video_ids,
+                "text": text,
+                "user_id": user_id
+            }, f, ensure_ascii=False, indent=2)
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Выберите действие:",
+            reply_to_message_id=message_id_to_reply,  # <-- reply на отправленное сообщение
+            reply_markup=admin_keyboard()
+        )
 
 
 def register_NOX_handlers():
