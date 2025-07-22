@@ -60,3 +60,69 @@ def selection_size_table_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="В начальное меню", callback_data="start_menu")
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+# ========================
+# Выбор цвета, например  color = "Молоко" или "Шёлк".  text = "Молоко" или "Шёлк"
+# ========================
+COLOURS = {
+    "milk": "Молоко",
+    "silk": "Шёлк",
+    "fog": "Туман",
+    "flax": "Лён",
+    "moss": "Мох",
+    "straw": "Солома",
+    "sandstone": "Песчаник",
+    "almond": "Миндаль",
+    "brandy": "Коньяк",
+    "amber": "Янтарь",
+    "caramel_nut": "Орех карамельный",
+    "chocolate": "Шоколад",
+    "nutmeg": "Мускат",
+    "coal": "Уголь",
+    "ebony": "Эбен",
+    "terracotta": "Терракот",
+    "copper": "Медный",
+    "colorless": "Бесцветный"
+}
+
+
+def selection_colour_keyboard() -> InlineKeyboardMarkup:
+    """
+    Возвращает клавиатуру для выбора цвета товара.
+    Разбивает цвета по строкам по 3 кнопки.
+    Текст кнопки — русское название цвета, callback_data — английский ключ.
+    """
+    buttons = [
+        InlineKeyboardButton(text=ru_name, callback_data=en_key)
+        for en_key, ru_name in COLOURS.items()
+    ]
+
+    # Разбиваем список кнопок на строки по 3 элемента
+    keyboard_rows = [
+        buttons[i:i + 3]
+        for i in range(0, len(buttons), 3)
+    ]
+    # Добавляем кнопку "В начальное меню"
+    # Добавляем кнопку "В начальное меню" как отдельную строку
+    keyboard_rows.append([
+        InlineKeyboardButton(text="В начальное меню", callback_data="start_menu")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
+
+
+def keyboard_start_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="В начальное меню", callback_data="start_menu"),
+            ]])
+
+
+def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_review"),
+            InlineKeyboardButton(text="❌ Отменить", callback_data="start_menu")
+        ]
+    ])
