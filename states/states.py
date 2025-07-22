@@ -7,7 +7,6 @@ class StatesNox(StatesGroup):
     feedback = State()  # Отзыв
     sending = State()  # Отправка
     photo_video = State()  # Фото
-    # photo = State()  # Фото
 
 
 class StatesPrimo(StatesGroup):

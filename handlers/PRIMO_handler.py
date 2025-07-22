@@ -23,6 +23,7 @@ from states.states import StatesPrimo
 album_buffer = defaultdict(list)  # media_group_id -> List[Message]
 published_media_cache = {}
 
+
 # 1. Выбор размера
 @router.callback_query(F.data == "arbo_primo_table")
 async def handle_primo_table_selection(callback: CallbackQuery, state: FSMContext):
@@ -34,6 +35,7 @@ async def handle_primo_table_selection(callback: CallbackQuery, state: FSMContex
     logger.warning("Пользователь нажал кнопку 'Стол ARBO PRIMO'")
     await state.set_state(StatesPrimo.size_primo)
 
+
 # 2. Выбор цвета (после выбора размера)
 @router.callback_query(StateFilter(StatesPrimo.size_primo), F.data.in_(TABLE_SIZES_NOX.keys()))
 async def handle_primo_size_selected(callback: CallbackQuery, state: FSMContext):
@@ -43,7 +45,7 @@ async def handle_primo_size_selected(callback: CallbackQuery, state: FSMContext)
     """
     size_key = callback.data
     size_value = TABLE_SIZES_NOX.get(size_key)
-    await state.update_data(size=size_value) # Используется ключ "size"
+    await state.update_data(size=size_value)  # Используется ключ "size"
     logger.warning(f"Пользователь выбрал размер {size_value}")
     # Удаляем предыдущее сообщение
     await callback.message.delete()
@@ -51,6 +53,7 @@ async def handle_primo_size_selected(callback: CallbackQuery, state: FSMContext)
     msg = await callback.message.answer("🎨 Выберите цвет стола:", reply_markup=selection_colour_keyboard())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.colour_primo)
+
 
 # 3. Получение отзыва (после выбора цвета)
 @router.callback_query(StateFilter(StatesPrimo.colour_primo), F.data.in_(COLOURS.keys()))
@@ -61,7 +64,7 @@ async def select_colour_primo(callback_query: CallbackQuery, state: FSMContext):
     """
     colour_key = callback_query.data
     colour_value = COLOURS.get(colour_key)
-    await state.update_data(colour=colour_value) # Используется ключ "colour"
+    await state.update_data(colour=colour_value)  # Используется ключ "colour"
     logger.warning(f"Пользователь выбрал цвет {colour_value}")
     # Удаляем сообщение с выбором цвета
     await callback_query.message.delete()
@@ -69,6 +72,7 @@ async def select_colour_primo(callback_query: CallbackQuery, state: FSMContext):
     msg = await callback_query.message.answer("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.feedback_primo)
+
 
 # 4. Прием фото и видео (после ввода текста отзыва)
 @router.message(StateFilter(StatesPrimo.feedback_primo))
@@ -90,14 +94,15 @@ async def handle_feedback_text_received_primo(message: Message, state: FSMContex
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.photo_video_primo)
 
+
 # 5. Обработка фото и видео
 @router.message(StateFilter(StatesPrimo.photo_video_primo), F.photo | F.video)
 async def handle_media_group_primo(message: Message, state: FSMContext):
     data = await state.get_data()
     # ✅ Исправлено: используем правильные ключи
-    feedback_text = data.get("feedback") # Правильный ключ
-    table_size = data.get("size")        # Правильный ключ
-    colour = data.get("colour")          # Правильный ключ
+    feedback_text = data.get("feedback")  # Правильный ключ
+    table_size = data.get("size")  # Правильный ключ
+    colour = data.get("colour")  # Правильный ключ
     text = (
         f"📦 Стол: ARBO PRIMO\n"
         f"📏 Размер: {table_size}\n"
@@ -179,13 +184,14 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
         await state.update_data(last_bot_message_id=confirm_msg.message_id)
         await state.set_state(StatesPrimo.sending_primo)
 
+
 @router.callback_query(F.data == "confirm_review_primo")
 async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     # ✅ Исправлено: используем правильные ключи
-    table_size = data.get("size")        # Правильный ключ
-    colour = data.get("colour")          # Правильный ключ
-    feedback_text = data.get("feedback", "") # Правильный ключ
+    table_size = data.get("size")  # Правильный ключ
+    colour = data.get("colour")  # Правильный ключ
+    feedback_text = data.get("feedback", "")  # Правильный ключ
     photo_ids = data.get("photo_ids", [])
     video_ids = data.get("video_ids", [])
     logger.success(f"✅ [{callback.from_user.id}] Отзыв подтверждён и отправлен на модерацию")
@@ -210,6 +216,7 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
     )
     await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
     await state.clear()
+
 
 # 📸 Универсальная функция отправки отзыва
 async def send_review_to_user_and_admin_primo(user_id, message, table_size, colour, feedback_text, photo_ids,
@@ -273,6 +280,7 @@ async def send_review_to_user_and_admin_primo(user_id, message, table_size, colo
             reply_to_message_id=message_id_to_reply,  # <-- reply на отправленное сообщение
             reply_markup=admin_keyboard()
         )
+
 
 def register_PRIMO_handlers():
     """Регистрация обработчиков"""
