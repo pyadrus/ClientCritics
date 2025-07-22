@@ -17,7 +17,7 @@ from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX, keyboard_start_menu, \
     keyboard_confirm_or_cancel
 from messages.messages import size_selection_text
-from states.states import States
+from states.statesnox import StatesNox
 
 # Словарь временного хранения альбомов
 album_buffer = defaultdict(list)  # media_group_id -> List[Message]
@@ -33,11 +33,11 @@ async def handle_nox_table_selection(callback: CallbackQuery, state: FSMContext)
     """
     await callback.message.edit_text(size_selection_text, reply_markup=selection_size_table_keyboard())
     logger.warning("Пользователь нажал кнопку 'Стол ARBO NOX'")
-    await state.set_state(States.size)
+    await state.set_state(StatesNox.size)
 
 
 # 2. Ввод текста отзыва
-@router.callback_query(StateFilter(States.size), F.data.in_(TABLE_SIZES_NOX.keys()))
+@router.callback_query(StateFilter(StatesNox.size), F.data.in_(TABLE_SIZES_NOX.keys()))
 async def handle_nox_size_selected(callback: CallbackQuery, state: FSMContext):
     """
     ✍️ Пользователь нажал "Оставить отзыв".
@@ -49,11 +49,11 @@ async def handle_nox_size_selected(callback: CallbackQuery, state: FSMContext):
     logger.warning(f"Пользователь выбрал размер {size_key}")
     msg = await callback.message.edit_text("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
-    await state.set_state(States.feedback)
+    await state.set_state(StatesNox.feedback)
 
 
 # 3. Прием фото и видео
-@router.message(StateFilter(States.feedback))
+@router.message(StateFilter(StatesNox.feedback))
 async def handle_feedback_text_received(message: Message, state: FSMContext):
     """
     Сохраняет отзыв и просит пользователя отправить фото.
@@ -70,11 +70,11 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
     # Отправляем сообщение от имени бота
     msg = await message.answer("📸 Отправьте фото и видео, но не более 10 штук", reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
-    await state.set_state(States.photo_video)
+    await state.set_state(StatesNox.photo_video)
 
 
 # 3. Фото и альбомы
-@router.message(StateFilter(States.photo_video), F.photo | F.video)
+@router.message(StateFilter(StatesNox.photo_video), F.photo | F.video)
 async def handle_media_group(message: Message, state: FSMContext):
     data = await state.get_data()
     feedback_text = data.get("feedback")
@@ -127,7 +127,7 @@ async def handle_media_group(message: Message, state: FSMContext):
             confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
                                                reply_markup=keyboard_confirm_or_cancel())
             await state.update_data(last_bot_message_id=confirm_msg.message_id)
-            await state.set_state(States.sending)
+            await state.set_state(StatesNox.sending)
     else:
         # Обработка одиночного медиа
         if data.get("photo_response_sent"):
@@ -164,7 +164,7 @@ async def handle_media_group(message: Message, state: FSMContext):
         confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
                                            reply_markup=keyboard_confirm_or_cancel())
         await state.update_data(last_bot_message_id=confirm_msg.message_id)
-        await state.set_state(States.sending)
+        await state.set_state(StatesNox.sending)
 
 
 @router.callback_query(F.data == "confirm_review")

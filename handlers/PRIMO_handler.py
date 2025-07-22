@@ -17,7 +17,7 @@ from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS, \
     keyboard_start_menu, keyboard_confirm_or_cancel_primo
 from messages.messages import size_selection_text
-from states.states import StatesPrimo
+from states.statesnox import StatesPrimo
 
 # Словарь временного хранения альбомов
 album_buffer = defaultdict(list)  # media_group_id -> List[Message]
