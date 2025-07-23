@@ -4,17 +4,20 @@ import logging
 import sys
 
 from dispatcher import bot, dp
+from handlers.leave_review import register_leave_review_handlers
 from handlers.nox import register_NOX_handlers
 from handlers.primo import register_PRIMO_handlers
 from handlers.review_moderation import register_handlers_publish
 from handlers.start_menu import register_handlers
-from handlers.leave_review import register_leave_review_handlers
 
 
 # https://docs.aiogram.dev/en/dev-3.x/
 
 async def main() -> None:
-    # запуск
+    """
+    Функция запуска бота
+    :return:  None
+    """
     await dp.start_polling(bot)
     register_handlers()
 
