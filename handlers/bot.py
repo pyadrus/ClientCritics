@@ -11,9 +11,8 @@ from loguru import logger
 from dispatcher import bot, CHANNEL_ID
 from dispatcher import router
 
-# ID канала или группы для публикации отзывов
-
 PENDING_DIR = "pending_reviews"
+
 
 @router.callback_query(F.data == "to_publish")
 async def handle_publish(callback: CallbackQuery):
