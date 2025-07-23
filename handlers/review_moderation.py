@@ -51,8 +51,7 @@ async def handle_publish(callback: CallbackQuery):
         await callback.message.edit_text("✅ Отзыв опубликован!")
         logger.info(f"Опубликовано в канал: {callback.from_user.id}")
 
-        # Удаляем json-файл
-        os.remove(json_path)
+        os.remove(json_path)  # Удаляем json-файл
 
     except Exception as e:
         logger.error(f"Ошибка при публикации: {e}")
