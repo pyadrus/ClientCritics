@@ -4,11 +4,11 @@ import logging
 import sys
 
 from dispatcher import bot, dp
-from handlers.NOX_handler import register_NOX_handlers
-from handlers.PRIMO_handler import register_PRIMO_handlers
-from handlers.bot import register_handlers_publish
-from handlers.handlers import register_handlers
-from handlers.leave_review_handler import register_leave_review_handlers
+from handlers.nox import register_NOX_handlers
+from handlers.primo import register_PRIMO_handlers
+from handlers.review_moderation import register_handlers_publish
+from handlers.start_menu import register_handlers
+from handlers.leave_review import register_leave_review_handlers
 
 
 # https://docs.aiogram.dev/en/dev-3.x/

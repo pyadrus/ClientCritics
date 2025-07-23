@@ -2,10 +2,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-# ========================
-# Стартовая клавиатура
-# ========================
-
 def start_keyboard() -> InlineKeyboardMarkup:
     """
     Возвращает клавиатуру для начального экрана.
@@ -17,13 +13,9 @@ def start_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-# ========================
-# Выбор продукта
-# ========================
-
 def product_selection_keyboard() -> InlineKeyboardMarkup:
     """
-    Возвращает клавиатуру для выбора типа стола.
+    Возвращает клавиатуру для выбора типа стола (продукта).
     """
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -34,22 +26,16 @@ def product_selection_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-# ========================
-# Выбор размера ARBO PRIMO, например  size = "solo" или "duo".  text = "Solo (120 × 75 см)" или "Duo (140 × 80 см)"
-# ========================
-
 TABLE_SIZES_NOX = {
-    "solo_nox": "Solo (120 × 75 см)",
-    "duo_nox": "Duo (140 × 80 см)",
-    "atelier_nox": "Atelier (160 × 85 см)",
-    "grande_nox": "Grande (180 × 90 см)",
+    "solo_nox": "Solo (120 × 75 см)", "duo_nox": "Duo (140 × 80 см)",
+    "atelier_nox": "Atelier (160 × 85 см)", "grande_nox": "Grande (180 × 90 см)",
     "majestic_nox": "Majestic (200 × 95 см)",
 }
 
 
 def selection_size_table_keyboard() -> InlineKeyboardMarkup:
     """
-    Возвращает клавиатуру для выбора размера стола ARBO PRIMO, NOX.
+    Возвращает клавиатуру для выбора размера стола ARBO PRIMO, NOX. size = "solo" или "duo".  text = "Solo (120 × 75 см)" или "Duo (140 × 80 см)"
     """
     buttons = [
         [InlineKeyboardButton(text=text, callback_data=size)]
@@ -62,28 +48,12 @@ def selection_size_table_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-# ========================
-# Выбор цвета, например  color = "Молоко" или "Шёлк".  text = "Молоко" или "Шёлк"
-# ========================
 COLOURS = {
-    "milk": "Молоко",
-    "silk": "Шёлк",
-    "fog": "Туман",
-    "flax": "Лён",
-    "moss": "Мох",
-    "straw": "Солома",
-    "sandstone": "Песчаник",
-    "almond": "Миндаль",
-    "brandy": "Коньяк",
-    "amber": "Янтарь",
-    "caramel_nut": "Орех карамельный",
-    "chocolate": "Шоколад",
-    "nutmeg": "Мускат",
-    "coal": "Уголь",
-    "ebony": "Эбен",
-    "terracotta": "Терракот",
-    "copper": "Медный",
-    "colorless": "Бесцветный"
+    "milk": "Молоко", "silk": "Шёлк", "fog": "Туман", "flax": "Лён",
+    "moss": "Мох", "straw": "Солома", "sandstone": "Песчаник", "almond": "Миндаль",
+    "brandy": "Коньяк", "amber": "Янтарь", "caramel_nut": "Орех карамельный", "chocolate": "Шоколад",
+    "nutmeg": "Мускат", "coal": "Уголь", "ebony": "Эбен", "terracotta": "Терракот",
+    "copper": "Медный", "colorless": "Бесцветный"
 }
 
 
@@ -92,6 +62,7 @@ def selection_colour_keyboard() -> InlineKeyboardMarkup:
     Возвращает клавиатуру для выбора цвета товара.
     Разбивает цвета по строкам по 3 кнопки.
     Текст кнопки — русское название цвета, callback_data — английский ключ.
+    Выбор цвета, например color = "Молоко" или "Шёлк".  text = "Молоко" или "Шёлк"
     """
     buttons = [
         InlineKeyboardButton(text=ru_name, callback_data=en_key)
@@ -111,7 +82,11 @@ def selection_colour_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
 
 
-def keyboard_start_menu():
+def keyboard_start_menu() -> InlineKeyboardMarkup:
+    """
+    Возвращает клавиатуру с кнопкой "В начальное меню"
+    :return: InlineKeyboardMarkup
+    """
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -120,6 +95,10 @@ def keyboard_start_menu():
 
 
 def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
+    """
+    Возвращает клавиатуру с двумя кнопками: "✅ Подтвердить" и "❌ Отменить", предназначенные для подтверждения
+    :return:  InlineKeyboardMarkup
+    """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_review"),
@@ -129,6 +108,10 @@ def keyboard_confirm_or_cancel() -> InlineKeyboardMarkup:
 
 
 def keyboard_confirm_or_cancel_primo() -> InlineKeyboardMarkup:
+    """
+    Возвращает клавиатуру с двумя кнопками: "✅ Подтвердить" и "❌ Отменить", предназначенные для подтверждения
+    :return:  InlineKeyboardMarkup
+    """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_review_primo"),

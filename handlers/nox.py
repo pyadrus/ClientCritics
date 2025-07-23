@@ -146,6 +146,12 @@ async def handle_media_group(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "confirm_review")
 async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext):
+    """
+    ✅ Пользователь подтвердил отзыв.
+
+    :param callback: callback query
+    :param state: state context
+    """
     data = await state.get_data()
 
     table_size = data.get("size")
@@ -185,14 +191,13 @@ async def send_review_to_user_and_admin(user, message, table_size, feedback_text
     """
     Отправляет отзыв в указанный чат.
 
-    Args:
-        user (aiogram.types.User): Объект пользователя, оставившего отзыв.
-        message (aiogram.types.Message): Сообщение, инициировавшее отправку.
-        table_size (str): Выбранный размер стола.
-        feedback_text (str): Текст отзыва.
-        photo_ids (list): Список ID фото.
-        video_ids (list, optional): Список ID видео. Defaults to None.
-        target_chat_id (int, optional): ID чата для отправки. Defaults to message.chat.id.
+    :param user: Пользователь, который оставил отзыв
+    :param message: Отправленное сообщение
+    :param table_size: Размер стола
+    :param feedback_text: Текст отзыва
+    :param photo_ids: Список ID фотографий
+    :param video_ids: Список ID видео
+    :param target_chat_id: ID чата для отправки (по умолчанию None)
     """
     chat_id = target_chat_id or message.chat.id  # если не задан, шлём пользователю
 
