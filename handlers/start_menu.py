@@ -29,11 +29,11 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "start_menu")
-async def start_menu_callback_handler(callback_query: CallbackQuery, state: FSMContext) -> None:
+async def start_menu_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
     """Отвечает на нажатие кнопки в меню 'Назад'"""
     await state.clear()
-    response_message = callback_query.message
-    logger.info(f"Пользователь вернулся в начальное меню: {callback_query.from_user.full_name}")
+    response_message = callback.message
+    logger.info(f"Пользователь вернулся в начальное меню: {callback.from_user.full_name}")
     await response_message.edit_text(
         greeting_text,
         reply_markup=start_keyboard()
