@@ -17,6 +17,7 @@ from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX,
                                  keyboard_start_menu, keyboard_confirm_or_cancel_primo, admin_keyboard)
 from messages.messages import size_selection_text, review_prompt_text, table_color_prompt_text, media_upload_prompt
 from states.states import StatesPrimo
+from utils.media import process_single_photo, process_single_video
 
 # Словарь временного хранения альбомов
 album_buffer = defaultdict(list)  # media_group_id -> List[Message]
@@ -146,42 +147,19 @@ async def handle_media_group_primo(message: Message, state: FSMContext):
             confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
                                                reply_markup=keyboard_confirm_or_cancel_primo())
             await state.update_data(last_bot_message_id=confirm_msg.message_id)
-            await state.set_state(StatesPrimo.sending_primo)
     else:
-        # Обработка одиночного медиа
-        if data.get("photo_response_sent"):
-            return
-        # Удаляем старое сообщение бота (например: "📸 Отправьте фото и видео...")
-        last_bot_message_id = data.get("last_bot_message_id")
-        if last_bot_message_id:
-            try:
-                await bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
-            except Exception as e:
-                logger.warning(f"Не удалось удалить предыдущее сообщение бота: {e}")
-        # Удаляем предыдущее сообщение бота
-        last_bot_message_id = data.get("last_bot_message_id")
-        if last_bot_message_id:
-            await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
+        preview_ids = []
+
         if message.photo:
-            photo_id = message.photo[-1].file_id
-            photo_ids = data.get("photo_ids", [])
-            photo_ids.append(photo_id)
-            await state.update_data(photo_ids=photo_ids, photo_response_sent=True)
-            media = [InputMediaPhoto(media=photo_id, caption=text)]
-            media = media[:10]  # Ограничиваем до 10 фото
-            await message.answer_media_group(media)
+            preview_ids = await process_single_photo(message, state, data, text)
         elif message.video:
-            video_id = message.video.file_id
-            video_ids = data.get("video_ids", [])
-            video_ids.append(video_id)
-            await state.update_data(video_ids=video_ids, photo_response_sent=True)
-            await message.answer_video(video_id, caption=text)
+            preview_ids = await process_single_video(message, state, data, text)
         else:
             await message.answer(text)
+        await state.update_data(preview_message_ids=preview_ids)
         confirm_msg = await message.answer("🔎 Проверьте отзыв перед отправкой. Всё верно?",
                                            reply_markup=keyboard_confirm_or_cancel_primo())
         await state.update_data(last_bot_message_id=confirm_msg.message_id)
-        await state.set_state(StatesPrimo.sending_primo)
 
 
 @router.callback_query(F.data == "confirm_review_primo")
@@ -202,17 +180,6 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=mid)
         except Exception as e:
             logger.warning(f"Не удалось удалить сообщение с медиа id={mid}: {e}")
-    # Отправка в группу на модерацию
-    # await send_review_to_user_and_admin_primo(
-    #     user_id=callback.from_user.id,
-    #     message=callback.message,
-    #     table_size=table_size,  # Размер стола
-    #     colour=colour,  # Цвет стола
-    #     feedback_text=feedback_text,
-    #     photo_ids=photo_ids,
-    #     video_ids=video_ids,
-    #     target_chat_id=ID_GROUP  # 👈 добавим параметр
-    # )
     await send_review_to_user_and_admin_primo(
         user=callback.from_user,  # Передаем весь объект пользователя
         message=callback.message,
@@ -246,9 +213,6 @@ async def send_review_to_user_and_admin_primo(user, message, table_size, colour,
     if user.username:
         # Если есть username, показываем его с @
         user_display = f"@{user.username}"
-        # Можно также добавить имя в скобках, если оно есть и отличается
-        # if full_name and full_name != user.username:
-        #     user_display += f" ({full_name})"
     elif full_name:
         # Если есть имя/фамилия, показываем их
         user_display = full_name
