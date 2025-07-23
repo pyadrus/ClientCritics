@@ -14,8 +14,8 @@ from loguru import logger
 
 from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
-from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS, \
-    keyboard_start_menu, keyboard_confirm_or_cancel_primo
+from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS,
+                                 keyboard_start_menu, keyboard_confirm_or_cancel_primo)
 from messages.messages import size_selection_text
 from states.states import StatesPrimo
 
@@ -215,7 +215,7 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
     #     target_chat_id=ID_GROUP  # 👈 добавим параметр
     # )
     await send_review_to_user_and_admin_primo(
-        user=callback.from_user, # Передаем весь объект пользователя
+        user=callback.from_user,  # Передаем весь объект пользователя
         message=callback.message,
         table_size=table_size,
         colour=colour,  # Цвет стола

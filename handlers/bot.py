@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import json
 import os
 
@@ -14,9 +13,7 @@ from dispatcher import router
 
 # ID канала или группы для публикации отзывов
 
-
 PENDING_DIR = "pending_reviews"
-
 
 @router.callback_query(F.data == "to_publish")
 async def handle_publish(callback: CallbackQuery):

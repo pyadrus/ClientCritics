@@ -14,8 +14,8 @@ from loguru import logger
 
 from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
-from keyboards.keyboards import selection_size_table_keyboard, TABLE_SIZES_NOX, keyboard_start_menu, \
-    keyboard_confirm_or_cancel
+from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, keyboard_start_menu,
+                                 keyboard_confirm_or_cancel)
 from messages.messages import size_selection_text
 from states.states import StatesNox
 
@@ -170,8 +170,6 @@ async def handle_media_group(message: Message, state: FSMContext):
 @router.callback_query(F.data == "confirm_review")
 async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    # table_size = data.get("size", "unknown")
-    # readable = TABLE_SIZES_NOX.get(table_size, "❓ Неизвестный размер")
 
     table_size = data.get("size")
 
@@ -200,20 +198,8 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
         else:
             user_mention = f"ID: {callback.from_user.id}"  # На всякий случай, если нет имени
 
-    # Отправка в группу на модерацию
-    # await send_review_to_user_and_admin(
-    #     user_mention=user_mention,  # Передаем упоминание вместо ID
-    #     user_id=callback.from_user.id,
-    #     message=callback.message,
-    #     table_size=table_size,  # Размер стола
-    #     feedback_text=feedback_text,
-    #     photo_ids=photo_ids,
-    #     video_ids=video_ids,
-    #     target_chat_id=ID_GROUP  # 👈 добавим параметр
-    # )
-
     await send_review_to_user_and_admin(
-        user=callback.from_user, # Передаем весь объект пользователя
+        user=callback.from_user,  # Передаем весь объект пользователя
         message=callback.message,
         table_size=table_size,
         feedback_text=feedback_text,
@@ -227,7 +213,8 @@ async def handle_review_confirmation(callback: CallbackQuery, state: FSMContext)
 
 
 # 📸 Универсальная функция отправки отзыва
-async def send_review_to_user_and_admin(user, message, table_size, feedback_text, photo_ids, video_ids=None, target_chat_id=None):
+async def send_review_to_user_and_admin(user, message, table_size, feedback_text, photo_ids, video_ids=None,
+                                        target_chat_id=None):
     """
     Отправляет отзыв в указанный чат.
 
@@ -253,17 +240,11 @@ async def send_review_to_user_and_admin(user, message, table_size, feedback_text
     full_name = " ".join(user_info_parts).strip() if user_info_parts else ""
 
     if user.username:
-        # Если есть username, показываем его с @
-        user_display = f"@{user.username}"
-        # Можно также добавить имя в скобках, если оно есть и отличается
-        # if full_name and full_name != user.username:
-        #     user_display += f" ({full_name})"
+        user_display = f"@{user.username}"  # Если есть username, показываем его с @
     elif full_name:
-        # Если есть имя/фамилия, показываем их
-        user_display = full_name
+        user_display = full_name  # Если есть имя/фамилия, показываем их
     else:
-        # Если ничего нет, показываем ID
-        user_display = f"ID: {user.id}"
+        user_display = f"ID: {user.id}"  # Если ничего нет, показываем ID
 
     # --- Формируем текст сообщения ---
     text = (
