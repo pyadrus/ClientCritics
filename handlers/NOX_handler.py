@@ -16,7 +16,7 @@ from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, keyboard_start_menu,
                                  keyboard_confirm_or_cancel)
-from messages.messages import size_selection_text, review_prompt_text
+from messages.messages import size_selection_text, review_prompt_text, media_upload_prompt
 from states.states import StatesNox
 
 # Словарь временного хранения альбомов
@@ -68,7 +68,7 @@ async def handle_feedback_text_received(message: Message, state: FSMContext):
     if last_bot_message_id:
         await message.bot.delete_message(chat_id=message.chat.id, message_id=last_bot_message_id)
     # Отправляем сообщение от имени бота
-    msg = await message.answer("📸 Отправьте фото и видео, но не более 10 штук", reply_markup=keyboard_start_menu())
+    msg = await message.answer(media_upload_prompt, reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesNox.photo_video)
 
