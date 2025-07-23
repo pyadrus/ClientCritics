@@ -16,7 +16,7 @@ from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, keyboard_start_menu,
                                  keyboard_confirm_or_cancel)
-from messages.messages import size_selection_text
+from messages.messages import size_selection_text, review_prompt_text
 from states.states import StatesNox
 
 # Словарь временного хранения альбомов
@@ -47,7 +47,7 @@ async def handle_nox_size_selected(callback: CallbackQuery, state: FSMContext):
     size_key = TABLE_SIZES_NOX.get(size_key)
     await state.update_data(size=size_key)
     logger.warning(f"Пользователь выбрал размер {size_key}")
-    msg = await callback.message.edit_text("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
+    msg = await callback.message.edit_text(review_prompt_text, reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesNox.feedback)
 

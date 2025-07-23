@@ -16,7 +16,7 @@ from dispatcher import router, bot, ID_GROUP
 from keyboards.admin_keyboards import admin_keyboard
 from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS,
                                  keyboard_start_menu, keyboard_confirm_or_cancel_primo)
-from messages.messages import size_selection_text
+from messages.messages import size_selection_text, review_prompt_text
 from states.states import StatesPrimo
 
 # Словарь временного хранения альбомов
@@ -69,7 +69,7 @@ async def select_colour_primo(callback_query: CallbackQuery, state: FSMContext):
     # Удаляем сообщение с выбором цвета
     await callback_query.message.delete()
     # Запрашиваем текст отзыва
-    msg = await callback_query.message.answer("📝 Напишите ваш отзыв в сообщении 👇", reply_markup=keyboard_start_menu())
+    msg = await callback_query.message.answer(review_prompt_text, reply_markup=keyboard_start_menu())
     await state.update_data(last_bot_message_id=msg.message_id)
     await state.set_state(StatesPrimo.feedback_primo)
 

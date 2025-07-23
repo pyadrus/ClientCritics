@@ -12,3 +12,7 @@ greeting_text = (
 size_selection_text = (
     "📐 Выберите размер стола:"
 )
+
+review_prompt_text = (
+    "✍️ Напишите ваш отзыв в сообщении ниже 👇"
+)
