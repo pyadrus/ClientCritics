@@ -15,7 +15,8 @@ from loguru import logger
 from dispatcher import router, bot, ID_GROUP
 from keyboards.keyboards import (selection_size_table_keyboard, TABLE_SIZES_NOX, selection_colour_keyboard, COLOURS,
                                  keyboard_start_menu, keyboard_confirm_or_cancel_primo, admin_keyboard)
-from messages.messages import size_selection_text, review_prompt_text, table_color_prompt_text, media_upload_prompt
+from messages.messages import size_selection_text, review_prompt_text, table_color_prompt_text, media_upload_prompt, \
+    final_text
 from states.states import StatesPrimo
 from utils.media import process_single_photo, process_single_video
 
@@ -190,7 +191,7 @@ async def handle_review_confirmation_primo(callback: CallbackQuery, state: FSMCo
         video_ids=video_ids,
         target_chat_id=ID_GROUP
     )
-    await callback.message.answer("🎉 Спасибо! Ваш отзыв отправлен на модерацию 👀", reply_markup=keyboard_start_menu())
+    await callback.message.answer(final_text, reply_markup=keyboard_start_menu())
     await state.clear()
 
 
